@@ -170,14 +170,14 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # --- HELPER ---
-def clean_fig(fig, h=360):
+def clean_fig(fig, h=300):
     fig.update_layout(
         plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
-        font=dict(family="Manrope", color="#1C1C1E", size=12),
-        margin=dict(l=8, r=8, t=36, b=8), height=h,
+        font=dict(family="Manrope", color="#1C1C1E", size=11),
+        margin=dict(l=8, r=8, t=10, b=10), height=h,
     )
-    fig.update_xaxes(showgrid=False, zeroline=False, tickfont=dict(size=10))
-    fig.update_yaxes(showgrid=True, gridcolor='#EDEDF2', zeroline=False, tickfont=dict(size=10))
+    fig.update_xaxes(showgrid=False, zeroline=False, tickfont=dict(size=9))
+    fig.update_yaxes(showgrid=True, gridcolor='#EDEDF2', zeroline=False, tickfont=dict(size=9))
     return fig
 
 # --- SECCIÓN: GRÁFICOS ---
@@ -200,7 +200,7 @@ with c1:
         text=[f"S/ {v:,.0f}" for v in v_sup['MAF NETO_Num']], textposition='outside',
         textfont=dict(size=11, family="Manrope", color="#1C1C1E")
     ))
-    fig1 = clean_fig(fig1, 400)
+    fig1 = clean_fig(fig1, 300)
     fig1.update_layout(xaxis_title="", yaxis_title="")
     st.plotly_chart(fig1, use_container_width=True)
 
@@ -218,7 +218,7 @@ with c2:
             text=[str(int(row['Cantidad']))], textposition='outside',
             textfont=dict(size=11, family="Manrope"), showlegend=False
         ))
-    fig2 = clean_fig(fig2, 400)
+    fig2 = clean_fig(fig2, 300)
     fig2.update_layout(barmode='stack', xaxis_title="", yaxis_title="")
     st.plotly_chart(fig2, use_container_width=True)
 
@@ -234,7 +234,7 @@ with c3:
         text=[f"{v/1000:.0f}K" for v in v_conv['MAF NETO_Num']], textposition='outside',
         textfont=dict(size=10, family="Manrope", color="#1C1C1E")
     ))
-    fig3 = clean_fig(fig3, 340)
+    fig3 = clean_fig(fig3, 260)
     fig3.update_layout(xaxis_title="", yaxis_title="")
     st.plotly_chart(fig3, use_container_width=True)
 
@@ -249,7 +249,7 @@ with c4:
                     line=dict(color='#FFFFFF', width=2)),
         pull=[0.03] * len(v_reg)
     ))
-    fig4 = clean_fig(fig4, 340)
+    fig4 = clean_fig(fig4, 260)
     fig4.update_layout(showlegend=False)
     st.plotly_chart(fig4, use_container_width=True)
 
@@ -265,7 +265,7 @@ with c5:
             text=[f"S/ {v:,.0f}" for v in top_asesores['MAF NETO_Num']], textposition='outside',
             textfont=dict(size=10, family="Manrope", color="#1C1C1E")
         ))
-        fig5 = clean_fig(fig5, 340)
+        fig5 = clean_fig(fig5, 260)
         fig5.update_layout(xaxis_title="", yaxis_title="")
         st.plotly_chart(fig5, use_container_width=True)
     else:
