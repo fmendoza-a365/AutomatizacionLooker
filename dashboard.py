@@ -13,6 +13,13 @@ ZONAS_MAP = {
 META_GLOBAL = 11950000.00
 NORTE = ['CHICLAYO', 'PIURA', 'TRUJILLO']
 
+METAS_SUPERVISORES = {
+    'ANGIE': 2500000, 'NAHOMI': 2000000, 'WINNIE': 2000000,
+    'JHON': 1500000, 'MARIELLA': 1000000, 'JIMMY': 1000000,
+    'KENNY': 1000000, 'LUIS CHUSE': 500000, 'JULIA': 500000,
+    'JORGE': 500000, 'LUIS SHEPHERD': 225000, 'LUIS MENDOZA': 225000
+}
+
 ESTADO_COLORS = {
     'POR INGRESAR': '#2B7DE9', 'EN EVALUACION BCP': '#E6A817', 'APROBADA': '#2D9A3F',
     'PENDIENTE DE BACK OFFICE': '#7C5CBF', 'PENDIENTE DE REMESA': '#C94277',
@@ -345,7 +352,17 @@ def build_matrix(data, group_col):
     res['EVALUACION BCP'] = g(ps, 'EN EVALUACION BCP')
     res['PENDIENTE DE BACK'] = g(ps, 'PENDIENTE DE BACK OFFICE')
     res['PENDIENTE DE REMESA'] = g(ps, 'PENDIENTE DE REMESA')
-    res['META OBJETIVO'] = 1000000.00
+    # Lógica de Metas Dinámicas
+    if group_col == 'SUPERVISOR':
+        res['META OBJETIVO'] = [METAS_SUPERVISORES.get(s, 0) for s in res.index]
+    else:
+        # Para plazas o zonas, sumamos las metas de los supervisores que pertenecen a ese grupo
+        plazas_metas = {}
+        for sup, meta in METAS_SUPERVISORES.items():
+            plaza = ZONAS_MAP.get(sup, 'OTROS')
+            plazas_metas[plaza] = plazas_metas.get(plaza, 0) + meta
+        res['META OBJETIVO'] = [plazas_metas.get(p, 1000000) for p in res.index]
+        
     res['AVANCE'] = (res['TOTAL DESEMBOLSO'] / res['META OBJETIVO']).fillna(0)
     res['Q POR INGRESAR'] = g(pc, 'POR INGRESAR')
     res['Q EVALUACION BCP'] = g(pc, 'EN EVALUACION BCP')
