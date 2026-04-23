@@ -87,6 +87,7 @@ st.markdown(f"""
         border: 1px solid #f0f0f5;
         padding: 10px;
         transition: transform 0.2s ease, box-shadow 0.2s ease;
+        overflow: hidden !important; /* Elimina scrollbars */
     }}
     .stPlotlyChart:hover {{
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
@@ -206,7 +207,7 @@ def clean_fig(fig, h=300):
     fig.update_layout(
         plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
         font=dict(family="Manrope", color="#1C1C1E", size=11),
-        margin=dict(l=80, r=80, t=20, b=20), height=h, # Márgenes internos equilibrados
+        margin=dict(l=60, r=60, t=5, b=5), height=h, # Márgenes reducidos para evitar scroll
         dragmode=False,
     )
     fig.update_xaxes(showgrid=False, zeroline=False, tickfont=dict(size=9), automargin=True)
@@ -283,14 +284,18 @@ with c4:
     st.markdown(f'<p {title_style}>Distribución por Región</p>', unsafe_allow_html=True)
     v_reg = desembolsado_df.groupby('REGION')['MAF NETO_Num'].sum().reset_index().sort_values('MAF NETO_Num', ascending=False)
     fig4 = go.Figure(go.Pie(
-        labels=v_reg['REGION'], values=v_reg['MAF NETO_Num'], hole=0.6,
-        textposition='inside', textinfo='label+percent',
-        textfont=dict(size=11, family="Manrope", color="#FFFFFF"),
+        labels=v_reg['REGION'], values=v_reg['MAF NETO_Num'], hole=0.7,
+        textposition='outside', textinfo='label+percent',
+        textfont=dict(size=11, family="Manrope", color="#1C1C1E"),
         marker=dict(colors=[REGION_COLORS.get(r, '#7A7A82') for r in v_reg['REGION']],
                     line=dict(color='#FFFFFF', width=2))
     ))
-    fig4 = clean_fig(fig4, 260)
-    fig4.update_layout(showlegend=False)
+    fig4 = clean_fig(fig4, 320) # Más alto para destacar
+    fig4.update_layout(
+        showlegend=False,
+        annotations=[dict(text=f'S/ {monto_desembolso/1e6:.1f}M<br><span style="font-size:10px;color:#7A7A82">Total</span>', 
+                          x=0.5, y=0.5, font_size=16, font_family="Manrope", font_weight=700, showarrow=False)]
+    )
     st.plotly_chart(fig4, use_container_width=True, config={'displayModeBar': False})
 
 with c5:
