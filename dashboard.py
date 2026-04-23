@@ -178,9 +178,14 @@ filtered_df = df[
 
 # --- KPIs ---
 desembolsado_df = filtered_df[filtered_df['ESTADO LIMPIO'] == 'DESEMBOLSADO']
+# --- CALCULO META DINÁMICA ---
+meta_actual = sum(METAS_SUPERVISORES.get(str(sup).upper().strip(), 0) for sup in selected_supervisor)
+# Si no hay selección o la suma es 0, usamos la global para evitar errores
+if meta_actual == 0: meta_actual = META_GLOBAL
+
 monto_desembolso = desembolsado_df['MAF NETO_Num'].sum()
 q_desembolso = len(desembolsado_df)
-avance = (monto_desembolso / META_GLOBAL * 100) if META_GLOBAL > 0 else 0
+avance = (monto_desembolso / meta_actual * 100) if meta_actual > 0 else 0
 cantidad_ops = len(filtered_df)
 ticket_prom = desembolsado_df['MAF NETO_Num'].mean() if q_desembolso > 0 else 0
 
@@ -194,7 +199,7 @@ st.markdown(f"""
     <div class="kpi-card" data-accent="true" role="status" aria-label="Avance vs meta: {avance:.1f} porciento">
         <div class="kpi-label">Avance vs Meta</div>
         <div class="kpi-value">{avance:.1f}%</div>
-        <div class="kpi-sub">Meta: S/ {META_GLOBAL:,.0f}</div>
+        <div class="kpi-sub">Meta: S/ {meta_actual:,.0f}</div>
     </div>
     <div class="kpi-card" role="status" aria-label="Operaciones totales: {cantidad_ops}">
         <div class="kpi-label">Operaciones Totales</div>
