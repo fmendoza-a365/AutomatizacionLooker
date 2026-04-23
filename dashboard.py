@@ -175,6 +175,7 @@ def clean_fig(fig, h=300):
         plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
         font=dict(family="Manrope", color="#1C1C1E", size=11),
         margin=dict(l=8, r=8, t=10, b=10), height=h,
+        dragmode=False, # Desactiva herramientas de selección/zoom
     )
     fig.update_xaxes(showgrid=False, zeroline=False, tickfont=dict(size=9))
     fig.update_yaxes(showgrid=True, gridcolor='#EDEDF2', zeroline=False, tickfont=dict(size=9))
@@ -202,10 +203,10 @@ with c1:
     ))
     fig1 = clean_fig(fig1, 300)
     fig1.update_layout(xaxis_title="", yaxis_title="")
-    st.plotly_chart(fig1, use_container_width=True)
+    st.plotly_chart(fig1, use_container_width=True, config={'displayModeBar': False})
 
 with c2:
-    st.markdown(f'<p {title_style}>Pipeline por Estado</p>', unsafe_allow_html=True)
+    st.markdown(f'<p {title_style}>Funnel por Estado</p>', unsafe_allow_html=True)
     e_dist = filtered_df['ESTADO LIMPIO'].value_counts().reset_index()
     e_dist.columns = ['Estado', 'Cantidad']
     e_dist = e_dist.sort_values('Cantidad', ascending=True) # Mayor a menor (Plotly dibuja de abajo a arriba)
@@ -220,7 +221,7 @@ with c2:
         ))
     fig2 = clean_fig(fig2, 300)
     fig2.update_layout(barmode='stack', xaxis_title="", yaxis_title="")
-    st.plotly_chart(fig2, use_container_width=True)
+    st.plotly_chart(fig2, use_container_width=True, config={'displayModeBar': False})
 
 # ROW 2
 c3, c4, c5 = st.columns(3)
@@ -236,7 +237,7 @@ with c3:
     ))
     fig3 = clean_fig(fig3, 260)
     fig3.update_layout(xaxis_title="", yaxis_title="")
-    st.plotly_chart(fig3, use_container_width=True)
+    st.plotly_chart(fig3, use_container_width=True, config={'displayModeBar': False})
 
 with c4:
     st.markdown(f'<p {title_style}>Distribución por Región</p>', unsafe_allow_html=True)
@@ -251,7 +252,7 @@ with c4:
     ))
     fig4 = clean_fig(fig4, 260)
     fig4.update_layout(showlegend=False)
-    st.plotly_chart(fig4, use_container_width=True)
+    st.plotly_chart(fig4, use_container_width=True, config={'displayModeBar': False})
 
 with c5:
     st.markdown(f'<p {title_style}>Top Asesores por Desembolso</p>', unsafe_allow_html=True)
@@ -267,7 +268,7 @@ with c5:
         ))
         fig5 = clean_fig(fig5, 260)
         fig5.update_layout(xaxis_title="", yaxis_title="")
-        st.plotly_chart(fig5, use_container_width=True)
+        st.plotly_chart(fig5, use_container_width=True, config={'displayModeBar': False})
     else:
         st.info("Columna de nombres no disponible.")
 
