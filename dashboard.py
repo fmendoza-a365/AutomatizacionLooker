@@ -229,7 +229,7 @@ with c3:
     v_conv = desembolsado_df.groupby('CONVENIO')['MAF NETO_Num'].sum().reset_index().sort_values('MAF NETO_Num', ascending=False)
     fig3 = go.Figure(go.Bar(
         x=v_conv['CONVENIO'], y=v_conv['MAF NETO_Num'],
-        marker=dict(color='#1A4FA0', cornerradius=4),
+        marker=dict(color='#E67212', cornerradius=4),
         text=[f"{v/1000:.0f}K" for v in v_conv['MAF NETO_Num']], textposition='outside',
         textfont=dict(size=10, family="Manrope", color="#1C1C1E")
     ))
@@ -257,11 +257,10 @@ with c5:
     if 'NOMBRES Y APELLIDOS' in desembolsado_df.columns:
         top_asesores = desembolsado_df.groupby('NOMBRES Y APELLIDOS')['MAF NETO_Num'].sum().nlargest(5).reset_index()
         top_asesores = top_asesores.sort_values('MAF NETO_Num')
-        # Acortar nombres largos
-        top_asesores['Nombre'] = top_asesores['NOMBRES Y APELLIDOS'].apply(lambda n: n[:22] + '...' if len(str(n)) > 22 else n)
+        top_asesores['Nombre'] = top_asesores['NOMBRES Y APELLIDOS'].apply(lambda n: str(n)[:20] + '...' if len(str(n)) > 20 else str(n))
         fig5 = go.Figure(go.Bar(
             y=top_asesores['Nombre'], x=top_asesores['MAF NETO_Num'], orientation='h',
-            marker=dict(color='#2D9A3F', cornerradius=4),
+            marker=dict(color='#E67212', cornerradius=4),
             text=[f"S/ {v:,.0f}" for v in top_asesores['MAF NETO_Num']], textposition='outside',
             textfont=dict(size=10, family="Manrope", color="#1C1C1E")
         ))
@@ -269,7 +268,7 @@ with c5:
         fig5.update_layout(xaxis_title="", yaxis_title="")
         st.plotly_chart(fig5, use_container_width=True)
     else:
-        st.info("Columna de nombres no disponible en los datos.")
+        st.info("Columna de nombres no disponible.")
 
 # --- SECCIÓN: TABLAS ---
 st.markdown("""<div class="section-header">
@@ -278,8 +277,7 @@ st.markdown("""<div class="section-header">
 </div>""", unsafe_allow_html=True)
 
 def build_matrix(data, group_col):
-    if data.empty:
-        return pd.DataFrame()
+    if data.empty: return pd.DataFrame()
     ps = data.pivot_table(index=group_col, columns='ESTADO LIMPIO', values='MAF NETO_Num', aggfunc='sum', fill_value=0)
     pc = data.pivot_table(index=group_col, columns='ESTADO LIMPIO', values='MAF NETO_Num', aggfunc='count', fill_value=0)
     res = pd.DataFrame(index=ps.index)
@@ -299,8 +297,7 @@ def build_matrix(data, group_col):
     res['Q EVALUACION BCP'] = g(pc, 'EN EVALUACION BCP')
     res['Q PENDIENTE DE BACK'] = g(pc, 'PENDIENTE DE BACK OFFICE')
     tot = res.sum(numeric_only=True)
-    if group_col == 'SUPERVISOR':
-        tot['ZONA'] = ''
+    if group_col == 'SUPERVISOR': tot['ZONA'] = ''
     tot['AVANCE'] = (tot['TOTAL DESEMBOLSO'] / tot['META OBJETIVO']) if tot['META OBJETIVO'] > 0 else 0
     res.loc['TOTAL'] = tot
     return res.reset_index()
@@ -309,8 +306,7 @@ m_df = df[df['SUPERVISOR'].isin(selected_supervisor) & df['CONVENIO'].isin(selec
 df_super = build_matrix(m_df, 'SUPERVISOR')
 
 def build_plaza_matrix(data):
-    if data.empty:
-        return pd.DataFrame()
+    if data.empty: return pd.DataFrame()
     data = data.copy()
     data['PLAZA'] = data['REGION']
     return build_matrix(data, 'PLAZA')
@@ -334,11 +330,9 @@ cc = {
 
 tab1, tab2 = st.tabs(["Por Supervisor", "Por Plaza"])
 with tab1:
-    if not df_super.empty:
-        st.dataframe(df_super, use_container_width=True, hide_index=True, column_config=cc)
+    if not df_super.empty: st.dataframe(df_super, use_container_width=True, hide_index=True, column_config=cc)
 with tab2:
-    if not df_plaza.empty:
-        st.dataframe(df_plaza, use_container_width=True, hide_index=True, column_config=cc)
+    if not df_plaza.empty: st.dataframe(df_plaza, use_container_width=True, hide_index=True, column_config=cc)
 
 # --- DETALLE ---
 st.markdown("""<div class="section-header">
@@ -347,4 +341,12 @@ st.markdown("""<div class="section-header">
 </div>""", unsafe_allow_html=True)
 
 with st.expander("Expandir tabla completa"):
-    st.dataframe(filtered_df, use_container_width=True, hide_index=True)
+    # Limpieza de columnas feas para el detalle
+    bad_cols = ['MAF NETO_Num', 'ZONA_SUP', 'REGION', 'PLAZA DE VENTA', 'FECHA FILTRO', 'FECHA DE INGRESO', 'FECHA DE DESEMBOLSO']
+    show_df = filtered_df.copy()
+    # Eliminar columnas Unnamed
+    show_df = show_df.loc[:, ~show_df.columns.str.contains('^Unnamed')]
+    # Eliminar otras columnas técnicas
+    show_df = show_df.drop(columns=[c for c in bad_cols if c in show_df.columns])
+    st.dataframe(show_df, use_container_width=True, hide_index=True)
+
