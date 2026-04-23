@@ -290,11 +290,12 @@ with c4:
         marker=dict(colors=[REGION_COLORS.get(r, '#7A7A82') for r in v_reg['REGION']],
                     line=dict(color='#FFFFFF', width=2))
     ))
-    fig4 = clean_fig(fig4, 260) # Normalizado con sus vecinos
+    fig4 = clean_fig(fig4, 230) # Un poco más pequeño para elegancia
     fig4.update_layout(
         showlegend=False,
+        margin=dict(l=40, r=40, t=10, b=10), # Más margen para que no choque
         annotations=[dict(
-            text=f'<span style="font-size:14px; font-weight:bold; color:#1A4FA0">S/ {monto_desembolso/1e6:.1f}M</span><br><span style="font-size:9px; color:#7A7A82">Total</span>', 
+            text=f'<span style="font-size:12px; font-weight:bold; color:#1A4FA0">S/ {monto_desembolso/1e6:.1f}M</span><br><span style="font-size:8px; color:#7A7A82">Total</span>', 
             x=0.5, y=0.5, showarrow=False,
             font=dict(family="Manrope")
         )]
