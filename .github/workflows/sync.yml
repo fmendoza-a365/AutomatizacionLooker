@@ -1,0 +1,31 @@
+name: Auto-Sync Google Sheets
+
+on:
+  schedule:
+    # Por defecto corre todos los días a medianoche (00:00 UTC, aprox 7pm hora Perú)
+    # Puedes cambiarlo, por ejemplo: '0 */2 * * *' para cada 2 horas.
+    - cron: '0 0 * * *'
+  workflow_dispatch: # Permite ejecutar el script a mano con un botón en GitHub
+
+jobs:
+  sincronizar_datos:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Descargar el código
+      uses: actions/checkout@v4
+
+    - name: Configurar entorno de Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Instalar librerías
+      run: |
+        pip install pandas gspread
+
+    - name: Ejecutar script de transferencia
+      env:
+        GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+      run: |
+        python sync_google_sheets.py
