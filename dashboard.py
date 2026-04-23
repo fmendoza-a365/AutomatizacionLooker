@@ -174,7 +174,7 @@ def clean_fig(fig, h=300):
     fig.update_layout(
         plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
         font=dict(family="Manrope", color="#1C1C1E", size=11),
-        margin=dict(l=140, r=110, t=10, b=10), height=h,
+        margin=dict(l=180, r=120, t=10, b=10), height=h,
         dragmode=False,
     )
     fig.update_xaxes(showgrid=False, zeroline=False, tickfont=dict(size=9), automargin=True)
@@ -199,12 +199,13 @@ with c1:
         y=v_sup['SUPERVISOR'], x=v_sup['MAF NETO_Num'], orientation='h',
         marker=dict(color='#E67212', cornerradius=4),
         text=[f"S/ {v:,.0f}" for v in v_sup['MAF NETO_Num']], textposition='outside',
-        textfont=dict(size=11, family="Manrope", color="#1C1C1E")
+        textfont=dict(size=11, family="Manrope", color="#1C1C1E"),
+        cliponaxis=False # Evita que se corte el texto
     ))
     fig1 = clean_fig(fig1, 300)
-    # Ampliar el rango del eje X un 15% para dar espacio a la etiqueta
+    # Ampliar el rango del eje X un 40% para dar espacio total a la etiqueta
     mx = v_sup['MAF NETO_Num'].max()
-    fig1.update_xaxes(range=[0, mx * 1.20] if mx > 0 else None)
+    fig1.update_xaxes(range=[0, mx * 1.40] if mx > 0 else None)
     fig1.update_layout(xaxis_title="", yaxis_title="")
     st.plotly_chart(fig1, use_container_width=True, config={'displayModeBar': False})
 
@@ -220,12 +221,13 @@ with c2:
             y=[row['Estado']], x=[row['Cantidad']], orientation='h',
             marker=dict(color=ESTADO_COLORS.get(row['Estado'], '#7A7A82'), cornerradius=4),
             text=[str(int(row['Cantidad']))], textposition='outside',
-            textfont=dict(size=11, family="Manrope"), showlegend=False
+            textfont=dict(size=11, family="Manrope"), showlegend=False,
+            cliponaxis=False
         ))
     fig2 = clean_fig(fig2, 300)
-    # Espacio extra en el eje X para el Funnel
+    # Espacio extra en el eje X para el Funnel (40% buffer)
     mxf = e_dist['Cantidad'].max()
-    fig2.update_xaxes(range=[0, mxf * 1.20] if mxf > 0 else None)
+    fig2.update_xaxes(range=[0, mxf * 1.40] if mxf > 0 else None)
     fig2.update_layout(barmode='stack', xaxis_title="", yaxis_title="")
     st.plotly_chart(fig2, use_container_width=True, config={'displayModeBar': False})
 
@@ -270,12 +272,13 @@ with c5:
             y=top_asesores['Nombre'], x=top_asesores['MAF NETO_Num'], orientation='h',
             marker=dict(color='#E67212', cornerradius=4),
             text=[f"S/ {v:,.0f}" for v in top_asesores['MAF NETO_Num']], textposition='outside',
-            textfont=dict(size=10, family="Manrope", color="#1C1C1E")
+            textfont=dict(size=10, family="Manrope", color="#1C1C1E"),
+            cliponaxis=False
         ))
         fig5 = clean_fig(fig5, 260)
-        # Espacio extra en el eje X para Top Asesores
+        # Espacio extra en el eje X para Top Asesores (40% buffer)
         mx5 = top_asesores['MAF NETO_Num'].max()
-        fig5.update_xaxes(range=[0, mx5 * 1.20] if mx5 > 0 else None)
+        fig5.update_xaxes(range=[0, mx5 * 1.40] if mx5 > 0 else None)
         fig5.update_layout(xaxis_title="", yaxis_title="")
         st.plotly_chart(fig5, use_container_width=True, config={'displayModeBar': False})
     else:
