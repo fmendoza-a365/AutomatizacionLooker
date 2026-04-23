@@ -151,6 +151,7 @@ def load_data():
     df['PLAZA DE VENTA'] = df['PLAZA DE VENTA'].fillna('SIN PLAZA').str.strip()
     df['ESTADO LIMPIO'] = df['ESTADO LIMPIO'].fillna('SIN ESTADO')
     df['CONVENIO'] = df['CONVENIO'].fillna('SIN CONVENIO').str.strip().str.upper()
+    df['EJECUTIVO'] = df['EJECUTIVO'].fillna('SIN ASIGNAR').str.strip().str.upper()
     df['ZONA_SUP'] = df['SUPERVISOR'].map(ZONAS_MAP).fillna('N/A')
     df['REGION'] = df['ZONA_SUP'].apply(lambda z: 'LIMA' if z == 'LIMA' else ('NORTE' if z in NORTE else 'OTROS'))
     return df
@@ -169,11 +170,14 @@ with st.sidebar:
     selected_supervisor = st.multiselect("Supervisor", supervisor_list, default=supervisor_list)
     convenio_list = sorted(df['CONVENIO'].unique().tolist())
     selected_convenio = st.multiselect("Convenio", convenio_list, default=convenio_list)
+    ejecutivo_list = sorted(df[df['SUPERVISOR'].isin(selected_supervisor)]['EJECUTIVO'].unique().tolist())
+    selected_ejecutivo = st.multiselect("Ejecutivo", ejecutivo_list, default=ejecutivo_list)
 
 filtered_df = df[
     (df['REGION'].isin(selected_region)) &
     (df['SUPERVISOR'].isin(selected_supervisor)) &
-    (df['CONVENIO'].isin(selected_convenio))
+    (df['CONVENIO'].isin(selected_convenio)) &
+    (df['EJECUTIVO'].isin(selected_ejecutivo))
 ]
 
 # --- KPIs ---
@@ -315,11 +319,11 @@ with c4:
     st.plotly_chart(fig4, use_container_width=True, config={'displayModeBar': False})
 
 with c5:
-    st.markdown(f'<p {title_style}>Top Asesores por Desembolso</p>', unsafe_allow_html=True)
-    if 'NOMBRES Y APELLIDOS' in desembolsado_df.columns:
-        top_asesores = desembolsado_df.groupby('NOMBRES Y APELLIDOS')['MAF NETO_Num'].sum().nlargest(5).reset_index()
+    st.markdown(f'<p {title_style}>Top Ejecutivos por Desembolso</p>', unsafe_allow_html=True)
+    if 'EJECUTIVO' in desembolsado_df.columns:
+        top_asesores = desembolsado_df.groupby('EJECUTIVO')['MAF NETO_Num'].sum().nlargest(5).reset_index()
         top_asesores = top_asesores.sort_values('MAF NETO_Num', ascending=True)
-        top_asesores['Nombre'] = top_asesores['NOMBRES Y APELLIDOS'].apply(lambda n: str(n)[:20] + '...' if len(str(n)) > 20 else str(n))
+        top_asesores['Nombre'] = top_asesores['EJECUTIVO'].apply(lambda n: str(n)[:20] + '...' if len(str(n)) > 20 else str(n))
         fig5 = go.Figure(go.Bar(
             y=top_asesores['Nombre'], x=top_asesores['MAF NETO_Num'], orientation='h',
             marker=dict(color='#E67212', cornerradius=4),
