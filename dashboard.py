@@ -1,9 +1,26 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
 import base64
-from datetime import datetime
+
+# --- CONSTANTES ---
+ZONAS_MAP = {
+    'NAHOMI': 'CHICLAYO', 'JORGE': 'CHICLAYO', 'JHON': 'CHICLAYO',
+    'WINNIE': 'LIMA', 'KENNY': 'LIMA', 'ANGIE': 'LIMA', 'MARIELLA': 'LIMA',
+    'LUIS CHUSE': 'LIMA', 'LUIS SHEPHERD': 'LIMA', 'LUIS MENDOZA': 'LIMA',
+    'JIMMY': 'TARAPOTO', 'JULIA': 'TRUJILLO',
+}
+META_GLOBAL = 11950000.00
+NORTE = ['CHICLAYO', 'PIURA', 'TRUJILLO']
+
+ESTADO_COLORS = {
+    'POR INGRESAR': '#2B7DE9', 'EN EVALUACION BCP': '#E6A817', 'APROBADA': '#2D9A3F',
+    'PENDIENTE DE BACK OFFICE': '#7C5CBF', 'PENDIENTE DE REMESA': '#C94277',
+    'DESEMBOLSADO': '#E67212', 'RECHAZADA': '#C43A31', 'OBSERVADO FFVV': '#7A7A82',
+    'OBSERVADO BACK': '#5C5C66', 'PENDIENTE DE DOCUMENTAR': '#1A4FA0',
+}
+
+REGION_COLORS = {'LIMA': '#1A4FA0', 'NORTE': '#E67212', 'OTROS': '#2B7DE9'}
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="A365 BCP - Centro de Operaciones", layout="wide", page_icon="isotipobcp.png")
@@ -11,13 +28,15 @@ st.set_page_config(page_title="A365 BCP - Centro de Operaciones", layout="wide",
 # --- LOGO ---
 def get_b64(path):
     try:
-        with open(path, "rb") as f: return base64.b64encode(f.read()).decode()
-    except: return None
+        with open(path, "rb") as f:
+            return base64.b64encode(f.read()).decode()
+    except FileNotFoundError:
+        return None
 
 logo_b64 = get_b64("A366BCP.png")
-logo_html = f'<img src="data:image/png;base64,{logo_b64}" style="height:44px;">' if logo_b64 else '<span style="font-weight:800;font-size:22px;color:#002A8D;">A365 BCP</span>'
+logo_html = f'<img src="data:image/png;base64,{logo_b64}" style="height:44px;" alt="Logo A365 BCP">' if logo_b64 else '<span style="font-weight:800;font-size:22px;color:#1A4FA0;">A365 BCP</span>'
 
-# --- CSS ---
+# --- CSS (neutrales tintados hacia azul marca hue ~260) ---
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap');
@@ -25,41 +44,55 @@ st.markdown(f"""
     #MainMenu, footer, header {{ visibility: hidden; }}
     .block-container {{ padding-top: 0 !important; padding-bottom: 1rem !important; max-width: 1400px; }}
 
-    .topbar {{ display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid #E8E8ED; margin-bottom:20px; }}
+    .topbar {{ display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid #DDDDE5; margin-bottom:20px; }}
     .topbar-left {{ display:flex; align-items:center; gap:14px; }}
-    .topbar-title {{ font-size:13px; font-weight:600; color:#8E8E93; letter-spacing:0.5px; text-transform:uppercase; }}
-    .topbar-right {{ font-size:12px; color:#8E8E93; }}
+    .topbar-title {{ font-size:13px; font-weight:600; color:#7B7B8A; letter-spacing:0.5px; text-transform:uppercase; }}
+    .topbar-right {{ font-size:12px; color:#7B7B8A; display:flex; align-items:center; gap:6px; }}
 
-    .section-header {{ display:flex; align-items:center; gap:8px; margin:28px 0 14px 0; padding-bottom:6px; border-bottom:2px solid #002A8D; }}
-    .section-icon {{ width:20px; height:20px; border-radius:4px; background:#FF7A00; display:flex; align-items:center; justify-content:center; }}
+    .section-header {{ display:flex; align-items:center; gap:8px; margin:28px 0 14px 0; padding-bottom:6px; border-bottom:2px solid #1A4FA0; }}
+    .section-icon {{ width:20px; height:20px; border-radius:4px; background:#E67212; display:flex; align-items:center; justify-content:center; flex-shrink:0; }}
     .section-icon svg {{ width:12px; height:12px; fill:white; }}
-    .section-label {{ font-size:13px; font-weight:700; color:#002A8D; text-transform:uppercase; letter-spacing:0.4px; }}
+    .section-label {{ font-size:13px; font-weight:700; color:#1A4FA0; text-transform:uppercase; letter-spacing:0.4px; }}
 
-    .kpi-row {{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:24px; }}
-    .kpi-card {{ background:#fff; border:1px solid #E8E8ED; border-radius:10px; padding:18px 20px; position:relative; overflow:hidden; }}
-    .kpi-card::after {{ content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,#FF7A00,#FFB300); }}
-    .kpi-label {{ font-size:10px; font-weight:700; color:#8E8E93; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px; }}
-    .kpi-value {{ font-size:26px; font-weight:800; color:#1D1D1F; letter-spacing:-0.5px; }}
-    .kpi-sub {{ font-size:11px; color:#8E8E93; margin-top:3px; }}
-    .kpi-accent {{ color:#FF7A00; font-weight:700; }}
+    /* KPI row — responsive con auto-fit */
+    .kpi-row {{ display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:14px; margin-bottom:24px; }}
+    .kpi-card {{
+        background:#FFFFFF;
+        border:1px solid #DDDDE5;
+        border-radius:10px;
+        padding:20px 22px;
+    }}
+    .kpi-card[data-accent="true"] .kpi-value {{ color:#E67212; }}
+    .kpi-label {{ font-size:10px; font-weight:700; color:#7B7B8A; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:8px; }}
+    .kpi-value {{ font-size:26px; font-weight:800; color:#1C1C1E; letter-spacing:-0.5px; }}
+    .kpi-sub {{ font-size:11px; color:#7B7B8A; margin-top:4px; }}
 
-    h1,h2,h3,h4 {{ font-weight:700 !important; color:#002A8D !important; }}
+    h1,h2,h3,h4 {{ font-weight:700 !important; color:#1A4FA0 !important; }}
     div[data-testid="stMetricLabel"], div[data-testid="stMetricValue"] {{ display:none; }}
-    div[data-testid="stDataFrame"] {{ border:1px solid #E8E8ED; border-radius:10px; overflow:hidden; }}
+    div[data-testid="stDataFrame"] {{ border:1px solid #DDDDE5; border-radius:10px; overflow:hidden; }}
 
-    /* Sidebar */
-    section[data-testid="stSidebar"] {{ background:#FAFAFC; border-right:1px solid #E8E8ED; }}
+    section[data-testid="stSidebar"] {{ background:#F7F7FB; border-right:1px solid #DDDDE5; }}
     section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {{ font-size:13px; }}
+
+    /* Responsive: gráficos en mobile */
+    @media (max-width: 768px) {{
+        .kpi-row {{ grid-template-columns: repeat(2, 1fr); }}
+        .block-container {{ padding-left: 1rem !important; padding-right: 1rem !important; }}
+    }}
+    @media (max-width: 480px) {{
+        .kpi-row {{ grid-template-columns: 1fr; }}
+    }}
 </style>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0">
 """, unsafe_allow_html=True)
 
 # --- TOPBAR ---
-now = datetime.now().strftime("%d/%m/%Y  %H:%M")
 st.markdown(f"""
 <div class="topbar">
     <div class="topbar-left">{logo_html}<span class="topbar-title">Centro de Operaciones</span></div>
-    <div class="topbar-right">Actualizado: {now}</div>
+    <div class="topbar-right">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="#7B7B8A"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 11h-2V7h2zm0 4h-2v-2h2z"/></svg>
+        Datos actualizados cada 5 min
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -78,35 +111,22 @@ def load_data():
     df['PLAZA DE VENTA'] = df['PLAZA DE VENTA'].fillna('SIN PLAZA').str.strip()
     df['ESTADO LIMPIO'] = df['ESTADO LIMPIO'].fillna('SIN ESTADO')
     df['CONVENIO'] = df['CONVENIO'].fillna('SIN CONVENIO').str.strip().str.upper()
-
-    # Mapear zonas de supervisor
-    zonas = {'NAHOMI':'CHICLAYO','JORGE':'CHICLAYO','JHON':'CHICLAYO',
-             'WINNIE':'LIMA','KENNY':'LIMA','ANGIE':'LIMA','MARIELLA':'LIMA',
-             'LUIS CHUSE':'LIMA','LUIS SHEPHERD':'LIMA','LUIS MENDOZA':'LIMA',
-             'JIMMY':'TARAPOTO','JULIA':'TRUJILLO'}
-    df['ZONA_SUP'] = df['SUPERVISOR'].map(zonas).fillna('N/A')
-
-    # La plaza/región se define por la zona del supervisor
-    norte = ['CHICLAYO', 'PIURA', 'TRUJILLO']
-    df['REGION'] = df['ZONA_SUP'].apply(lambda z: 'LIMA' if z == 'LIMA' else ('NORTE' if z in norte else 'OTROS'))
+    df['ZONA_SUP'] = df['SUPERVISOR'].map(ZONAS_MAP).fillna('N/A')
+    df['REGION'] = df['ZONA_SUP'].apply(lambda z: 'LIMA' if z == 'LIMA' else ('NORTE' if z in NORTE else 'OTROS'))
     return df
 
 with st.spinner('Conectando...'):
     df = load_data()
 
-# --- SIDEBAR FILTERS ---
+# --- SIDEBAR ---
 with st.sidebar:
-    st.markdown(f"""<div style="text-align:center;padding:12px 0 8px 0;">{logo_html}</div>""", unsafe_allow_html=True)
+    st.markdown(f'<div style="text-align:center;padding:12px 0 8px 0;">{logo_html}</div>', unsafe_allow_html=True)
     st.markdown("---")
     st.markdown("**Filtros**")
-
-    # Plaza como región agrupada
     region_opts = ['LIMA', 'NORTE', 'OTROS']
     selected_region = st.multiselect("Plaza", region_opts, default=region_opts)
-
     supervisor_list = sorted(df[df['REGION'].isin(selected_region)]['SUPERVISOR'].unique().tolist())
     selected_supervisor = st.multiselect("Supervisor", supervisor_list, default=supervisor_list)
-
     convenio_list = sorted(df['CONVENIO'].unique().tolist())
     selected_convenio = st.multiselect("Convenio", convenio_list, default=convenio_list)
 
@@ -117,59 +137,56 @@ filtered_df = df[
 ]
 
 # --- KPIs ---
-META_GLOBAL = 11950000.00
 desembolsado_df = filtered_df[filtered_df['ESTADO LIMPIO'] == 'DESEMBOLSADO']
 monto_desembolso = desembolsado_df['MAF NETO_Num'].sum()
 q_desembolso = len(desembolsado_df)
 avance = (monto_desembolso / META_GLOBAL * 100) if META_GLOBAL > 0 else 0
 cantidad_ops = len(filtered_df)
+ticket_prom = desembolsado_df['MAF NETO_Num'].mean() if q_desembolso > 0 else 0
 
 st.markdown(f"""
 <div class="kpi-row">
-    <div class="kpi-card">
+    <div class="kpi-card" role="status" aria-label="Desembolso total: S/ {monto_desembolso:,.0f}">
         <div class="kpi-label">Desembolso Total</div>
         <div class="kpi-value">S/ {monto_desembolso:,.0f}</div>
         <div class="kpi-sub">{q_desembolso} operaciones desembolsadas</div>
     </div>
-    <div class="kpi-card">
+    <div class="kpi-card" data-accent="true" role="status" aria-label="Avance vs meta: {avance:.1f} porciento">
         <div class="kpi-label">Avance vs Meta</div>
-        <div class="kpi-value kpi-accent">{avance:.1f}%</div>
+        <div class="kpi-value">{avance:.1f}%</div>
         <div class="kpi-sub">Meta: S/ {META_GLOBAL:,.0f}</div>
     </div>
-    <div class="kpi-card">
+    <div class="kpi-card" role="status" aria-label="Operaciones totales: {cantidad_ops}">
         <div class="kpi-label">Operaciones Totales</div>
         <div class="kpi-value">{cantidad_ops}</div>
         <div class="kpi-sub">Todos los estados</div>
     </div>
-    <div class="kpi-card">
+    <div class="kpi-card" role="status" aria-label="Ticket promedio: S/ {ticket_prom:,.0f}">
         <div class="kpi-label">Ticket Promedio</div>
-        <div class="kpi-value">S/ {(desembolsado_df['MAF NETO_Num'].mean() if q_desembolso > 0 else 0):,.0f}</div>
+        <div class="kpi-value">S/ {ticket_prom:,.0f}</div>
         <div class="kpi-sub">Promedio por desembolso</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
 # --- HELPER ---
-bcp = ["#FF7A00", "#002A8D", "#00A4E4", "#FFB300", "#001B5A", "#6E6E73", "#D4380D", "#389E0D", "#722ED1", "#EB2F96"]
-
 def clean_fig(fig, h=360):
     fig.update_layout(
         plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
-        font=dict(family="Manrope", color="#1D1D1F", size=12),
+        font=dict(family="Manrope", color="#1C1C1E", size=12),
         margin=dict(l=8, r=8, t=36, b=8), height=h,
-        legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5, font=dict(size=10))
     )
     fig.update_xaxes(showgrid=False, zeroline=False, tickfont=dict(size=10))
-    fig.update_yaxes(showgrid=True, gridcolor='#F0F0F5', zeroline=False, tickfont=dict(size=10))
+    fig.update_yaxes(showgrid=True, gridcolor='#EDEDF2', zeroline=False, tickfont=dict(size=10))
     return fig
 
-# --- SECTION: GRAFICOS ---
+# --- SECCIÓN: GRÁFICOS ---
 st.markdown("""<div class="section-header">
     <div class="section-icon"><svg viewBox="0 0 24 24"><path d="M3 13h2v8H3zm4-4h2v12H7zm4-2h2v14h-2zm4 6h2v8h-2zm4-8h2v16h-2z"/></svg></div>
-    <span class="section-label">Analisis de Rendimiento</span>
+    <span class="section-label">Análisis de Rendimiento</span>
 </div>""", unsafe_allow_html=True)
 
-# ROW 1
+# ROW 1: Desembolso por Supervisor + Pipeline por Estado
 c1, c2 = st.columns([3, 2])
 
 with c1:
@@ -177,9 +194,9 @@ with c1:
     v_sup = desembolsado_df.groupby('SUPERVISOR')['MAF NETO_Num'].sum().reset_index().sort_values('MAF NETO_Num')
     fig1 = go.Figure(go.Bar(
         y=v_sup['SUPERVISOR'], x=v_sup['MAF NETO_Num'], orientation='h',
-        marker=dict(color='#FF7A00', cornerradius=4),
+        marker=dict(color='#E67212', cornerradius=4),
         text=[f"S/ {v:,.0f}" for v in v_sup['MAF NETO_Num']], textposition='outside',
-        textfont=dict(size=11, family="Manrope", color="#1D1D1F")
+        textfont=dict(size=11, family="Manrope", color="#1C1C1E")
     ))
     fig1 = clean_fig(fig1, 400)
     fig1.update_layout(xaxis_title="", yaxis_title="")
@@ -187,13 +204,7 @@ with c1:
 
 with c2:
     st.markdown("#### Pipeline por Estado")
-    estado_colors = {
-        'POR INGRESAR': '#00A4E4', 'EN EVALUACION BCP': '#FFB300', 'APROBADA': '#389E0D',
-        'PENDIENTE DE BACK OFFICE': '#722ED1', 'PENDIENTE DE REMESA': '#EB2F96',
-        'DESEMBOLSADO': '#FF7A00', 'RECHAZADA': '#D4380D', 'OBSERVADO FFVV': '#8E8E93',
-        'OBSERVADO BACK': '#6E6E73', 'PENDIENTE DE DOCUMENTAR': '#002A8D'
-    }
-    estado_order = list(estado_colors.keys())
+    estado_order = list(ESTADO_COLORS.keys())
     e_dist = filtered_df['ESTADO LIMPIO'].value_counts().reset_index()
     e_dist.columns = ['Estado', 'Cantidad']
     e_dist['Estado'] = pd.Categorical(e_dist['Estado'], categories=estado_order, ordered=True)
@@ -201,8 +212,8 @@ with c2:
     fig2 = go.Figure()
     for _, row in e_dist.iterrows():
         fig2.add_trace(go.Bar(
-            y=[row['Estado']], x=[row['Cantidad']], orientation='h', name=row['Estado'],
-            marker=dict(color=estado_colors.get(row['Estado'], '#8E8E93'), cornerradius=4),
+            y=[row['Estado']], x=[row['Cantidad']], orientation='h',
+            marker=dict(color=ESTADO_COLORS.get(row['Estado'], '#7A7A82'), cornerradius=4),
             text=[str(int(row['Cantidad']))], textposition='outside',
             textfont=dict(size=11, family="Manrope"), showlegend=False
         ))
@@ -210,7 +221,7 @@ with c2:
     fig2.update_layout(barmode='stack', xaxis_title="", yaxis_title="")
     st.plotly_chart(fig2, use_container_width=True)
 
-# ROW 2
+# ROW 2: Convenio + Región + Top 5 Asesores
 c3, c4, c5 = st.columns(3)
 
 with c3:
@@ -218,23 +229,22 @@ with c3:
     v_conv = desembolsado_df.groupby('CONVENIO')['MAF NETO_Num'].sum().reset_index().sort_values('MAF NETO_Num', ascending=False)
     fig3 = go.Figure(go.Bar(
         x=v_conv['CONVENIO'], y=v_conv['MAF NETO_Num'],
-        marker=dict(color='#002A8D', cornerradius=4),
+        marker=dict(color='#1A4FA0', cornerradius=4),
         text=[f"{v/1000:.0f}K" for v in v_conv['MAF NETO_Num']], textposition='outside',
-        textfont=dict(size=10, family="Manrope", color="#1D1D1F")
+        textfont=dict(size=10, family="Manrope", color="#1C1C1E")
     ))
     fig3 = clean_fig(fig3, 340)
     fig3.update_layout(xaxis_title="", yaxis_title="")
     st.plotly_chart(fig3, use_container_width=True)
 
 with c4:
-    st.markdown("#### Distribucion por Region")
+    st.markdown("#### Distribución por Región")
     v_reg = desembolsado_df.groupby('REGION')['MAF NETO_Num'].sum().reset_index()
-    rc = {'LIMA': '#002A8D', 'NORTE': '#FF7A00', 'OTROS': '#00A4E4'}
     fig4 = go.Figure(go.Pie(
         labels=v_reg['REGION'], values=v_reg['MAF NETO_Num'], hole=0.55,
         textposition='outside', textinfo='label+percent',
-        textfont=dict(size=12, family="Manrope", color="#1D1D1F"),
-        marker=dict(colors=[rc.get(r, '#8E8E93') for r in v_reg['REGION']],
+        textfont=dict(size=12, family="Manrope", color="#1C1C1E"),
+        marker=dict(colors=[REGION_COLORS.get(r, '#7A7A82') for r in v_reg['REGION']],
                     line=dict(color='#FFFFFF', width=2)),
         pull=[0.03] * len(v_reg)
     ))
@@ -243,39 +253,38 @@ with c4:
     st.plotly_chart(fig4, use_container_width=True)
 
 with c5:
-    st.markdown("#### Composicion de Estados")
-    e_pie = filtered_df['ESTADO LIMPIO'].value_counts().reset_index()
-    e_pie.columns = ['Estado', 'Cantidad']
-    fig5 = go.Figure(go.Pie(
-        labels=e_pie['Estado'], values=e_pie['Cantidad'], hole=0.55,
-        textposition='outside', textinfo='label+percent',
-        textfont=dict(size=10, family="Manrope", color="#1D1D1F"),
-        marker=dict(colors=[estado_colors.get(e, '#8E8E93') for e in e_pie['Estado']],
-                    line=dict(color='#FFFFFF', width=2)),
-        pull=[0.02] * len(e_pie)
-    ))
-    fig5 = clean_fig(fig5, 340)
-    fig5.update_layout(showlegend=False)
-    st.plotly_chart(fig5, use_container_width=True)
+    st.markdown("#### Top Asesores por Desembolso")
+    if 'NOMBRES Y APELLIDOS' in desembolsado_df.columns:
+        top_asesores = desembolsado_df.groupby('NOMBRES Y APELLIDOS')['MAF NETO_Num'].sum().nlargest(5).reset_index()
+        top_asesores = top_asesores.sort_values('MAF NETO_Num')
+        # Acortar nombres largos
+        top_asesores['Nombre'] = top_asesores['NOMBRES Y APELLIDOS'].apply(lambda n: n[:22] + '...' if len(str(n)) > 22 else n)
+        fig5 = go.Figure(go.Bar(
+            y=top_asesores['Nombre'], x=top_asesores['MAF NETO_Num'], orientation='h',
+            marker=dict(color='#2D9A3F', cornerradius=4),
+            text=[f"S/ {v:,.0f}" for v in top_asesores['MAF NETO_Num']], textposition='outside',
+            textfont=dict(size=10, family="Manrope", color="#1C1C1E")
+        ))
+        fig5 = clean_fig(fig5, 340)
+        fig5.update_layout(xaxis_title="", yaxis_title="")
+        st.plotly_chart(fig5, use_container_width=True)
+    else:
+        st.info("Columna de nombres no disponible en los datos.")
 
-
-
-# --- SECTION: TABLAS ---
+# --- SECCIÓN: TABLAS ---
 st.markdown("""<div class="section-header">
     <div class="section-icon"><svg viewBox="0 0 24 24"><path d="M3 3h18v18H3zm2 2v4h6V5zm8 0v4h6V5zm-8 6v4h6v-4zm8 0v4h6v-4zM5 17v2h6v-2zm8 0v2h6v-2z"/></svg></div>
-    <span class="section-label">Tablas de Gestion</span>
+    <span class="section-label">Tablas de Gestión</span>
 </div>""", unsafe_allow_html=True)
 
 def build_matrix(data, group_col):
-    if data.empty: return pd.DataFrame()
+    if data.empty:
+        return pd.DataFrame()
     ps = data.pivot_table(index=group_col, columns='ESTADO LIMPIO', values='MAF NETO_Num', aggfunc='sum', fill_value=0)
     pc = data.pivot_table(index=group_col, columns='ESTADO LIMPIO', values='MAF NETO_Num', aggfunc='count', fill_value=0)
     res = pd.DataFrame(index=ps.index)
     if group_col == 'SUPERVISOR':
-        zm = {'NAHOMI':'CHICLAYO','JORGE':'CHICLAYO','JHON':'CHICLAYO','WINNIE':'LIMA','KENNY':'LIMA',
-              'ANGIE':'LIMA','MARIELLA':'LIMA','LUIS CHUSE':'LIMA','LUIS SHEPHERD':'LIMA',
-              'LUIS MENDOZA':'LIMA','JIMMY':'TARAPOTO','JULIA':'TRUJILLO'}
-        res['ZONA'] = [zm.get(s, 'N/A') for s in res.index]
+        res['ZONA'] = [ZONAS_MAP.get(s, 'N/A') for s in res.index]
     g = lambda p, c: p[c] if c in p.columns else 0
     res['TOTAL DESEMBOLSO'] = g(ps, 'DESEMBOLSADO')
     res['Q DESEMBOLSO'] = g(pc, 'DESEMBOLSADO')
@@ -290,7 +299,8 @@ def build_matrix(data, group_col):
     res['Q EVALUACION BCP'] = g(pc, 'EN EVALUACION BCP')
     res['Q PENDIENTE DE BACK'] = g(pc, 'PENDIENTE DE BACK OFFICE')
     tot = res.sum(numeric_only=True)
-    if group_col == 'SUPERVISOR': tot['ZONA'] = ''
+    if group_col == 'SUPERVISOR':
+        tot['ZONA'] = ''
     tot['AVANCE'] = (tot['TOTAL DESEMBOLSO'] / tot['META OBJETIVO']) if tot['META OBJETIVO'] > 0 else 0
     res.loc['TOTAL'] = tot
     return res.reset_index()
@@ -298,9 +308,9 @@ def build_matrix(data, group_col):
 m_df = df[df['SUPERVISOR'].isin(selected_supervisor) & df['CONVENIO'].isin(selected_convenio) & df['REGION'].isin(selected_region)]
 df_super = build_matrix(m_df, 'SUPERVISOR')
 
-# Build plaza matrix using REGION
 def build_plaza_matrix(data):
-    if data.empty: return pd.DataFrame()
+    if data.empty:
+        return pd.DataFrame()
     data = data.copy()
     data['PLAZA'] = data['REGION']
     return build_matrix(data, 'PLAZA')
@@ -324,9 +334,11 @@ cc = {
 
 tab1, tab2 = st.tabs(["Por Supervisor", "Por Plaza"])
 with tab1:
-    if not df_super.empty: st.dataframe(df_super, use_container_width=True, hide_index=True, column_config=cc)
+    if not df_super.empty:
+        st.dataframe(df_super, use_container_width=True, hide_index=True, column_config=cc)
 with tab2:
-    if not df_plaza.empty: st.dataframe(df_plaza, use_container_width=True, hide_index=True, column_config=cc)
+    if not df_plaza.empty:
+        st.dataframe(df_plaza, use_container_width=True, hide_index=True, column_config=cc)
 
 # --- DETALLE ---
 st.markdown("""<div class="section-header">
