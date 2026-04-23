@@ -186,12 +186,14 @@ st.markdown("""<div class="section-header">
     <span class="section-label">Análisis de Rendimiento</span>
 </div>""", unsafe_allow_html=True)
 
-# ROW 1: Desembolso por Supervisor + Pipeline por Estado
+title_style = 'style="font-size:15px; font-weight:700; color:#1A4FA0; margin-bottom:12px; margin-top:0px;"'
+
+# ROW 1
 c1, c2 = st.columns([3, 2])
 
 with c1:
-    st.markdown("#### Desembolso por Supervisor")
-    v_sup = desembolsado_df.groupby('SUPERVISOR')['MAF NETO_Num'].sum().reset_index().sort_values('MAF NETO_Num')
+    st.markdown(f'<p {title_style}>Desembolso por Supervisor</p>', unsafe_allow_html=True)
+    v_sup = desembolsado_df.groupby('SUPERVISOR')['MAF NETO_Num'].sum().reset_index().sort_values('MAF NETO_Num', ascending=True)
     fig1 = go.Figure(go.Bar(
         y=v_sup['SUPERVISOR'], x=v_sup['MAF NETO_Num'], orientation='h',
         marker=dict(color='#E67212', cornerradius=4),
@@ -203,12 +205,11 @@ with c1:
     st.plotly_chart(fig1, use_container_width=True)
 
 with c2:
-    st.markdown("#### Pipeline por Estado")
-    estado_order = list(ESTADO_COLORS.keys())
+    st.markdown(f'<p {title_style}>Pipeline por Estado</p>', unsafe_allow_html=True)
     e_dist = filtered_df['ESTADO LIMPIO'].value_counts().reset_index()
     e_dist.columns = ['Estado', 'Cantidad']
-    e_dist['Estado'] = pd.Categorical(e_dist['Estado'], categories=estado_order, ordered=True)
-    e_dist = e_dist.sort_values('Estado').dropna(subset=['Estado'])
+    e_dist = e_dist.sort_values('Cantidad', ascending=True) # Mayor a menor (Plotly dibuja de abajo a arriba)
+    
     fig2 = go.Figure()
     for _, row in e_dist.iterrows():
         fig2.add_trace(go.Bar(
@@ -221,15 +222,15 @@ with c2:
     fig2.update_layout(barmode='stack', xaxis_title="", yaxis_title="")
     st.plotly_chart(fig2, use_container_width=True)
 
-# ROW 2: Convenio + Región + Top 5 Asesores
+# ROW 2
 c3, c4, c5 = st.columns(3)
 
 with c3:
-    st.markdown("#### Desembolso por Convenio")
+    st.markdown(f'<p {title_style}>Desembolso por Convenio</p>', unsafe_allow_html=True)
     v_conv = desembolsado_df.groupby('CONVENIO')['MAF NETO_Num'].sum().reset_index().sort_values('MAF NETO_Num', ascending=False)
     fig3 = go.Figure(go.Bar(
         x=v_conv['CONVENIO'], y=v_conv['MAF NETO_Num'],
-        marker=dict(color='#E67212', cornerradius=4),
+        marker=dict(color='#1A4FA0', cornerradius=4), # Usamos Azul BCP para variar del naranja
         text=[f"{v/1000:.0f}K" for v in v_conv['MAF NETO_Num']], textposition='outside',
         textfont=dict(size=10, family="Manrope", color="#1C1C1E")
     ))
@@ -238,8 +239,8 @@ with c3:
     st.plotly_chart(fig3, use_container_width=True)
 
 with c4:
-    st.markdown("#### Distribución por Región")
-    v_reg = desembolsado_df.groupby('REGION')['MAF NETO_Num'].sum().reset_index()
+    st.markdown(f'<p {title_style}>Distribución por Región</p>', unsafe_allow_html=True)
+    v_reg = desembolsado_df.groupby('REGION')['MAF NETO_Num'].sum().reset_index().sort_values('MAF NETO_Num', ascending=False)
     fig4 = go.Figure(go.Pie(
         labels=v_reg['REGION'], values=v_reg['MAF NETO_Num'], hole=0.55,
         textposition='outside', textinfo='label+percent',
@@ -253,10 +254,10 @@ with c4:
     st.plotly_chart(fig4, use_container_width=True)
 
 with c5:
-    st.markdown("#### Top Asesores por Desembolso")
+    st.markdown(f'<p {title_style}>Top Asesores por Desembolso</p>', unsafe_allow_html=True)
     if 'NOMBRES Y APELLIDOS' in desembolsado_df.columns:
         top_asesores = desembolsado_df.groupby('NOMBRES Y APELLIDOS')['MAF NETO_Num'].sum().nlargest(5).reset_index()
-        top_asesores = top_asesores.sort_values('MAF NETO_Num')
+        top_asesores = top_asesores.sort_values('MAF NETO_Num', ascending=True)
         top_asesores['Nombre'] = top_asesores['NOMBRES Y APELLIDOS'].apply(lambda n: str(n)[:20] + '...' if len(str(n)) > 20 else str(n))
         fig5 = go.Figure(go.Bar(
             y=top_asesores['Nombre'], x=top_asesores['MAF NETO_Num'], orientation='h',
