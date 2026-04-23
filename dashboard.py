@@ -174,11 +174,11 @@ def clean_fig(fig, h=300):
     fig.update_layout(
         plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
         font=dict(family="Manrope", color="#1C1C1E", size=11),
-        margin=dict(l=8, r=8, t=10, b=10), height=h,
-        dragmode=False, # Desactiva herramientas de selección/zoom
+        margin=dict(l=100, r=100, t=10, b=10), height=h,
+        dragmode=False,
     )
-    fig.update_xaxes(showgrid=False, zeroline=False, tickfont=dict(size=9))
-    fig.update_yaxes(showgrid=True, gridcolor='#EDEDF2', zeroline=False, tickfont=dict(size=9))
+    fig.update_xaxes(showgrid=False, zeroline=False, tickfont=dict(size=9), automargin=True)
+    fig.update_yaxes(showgrid=True, gridcolor='#EDEDF2', zeroline=False, tickfont=dict(size=9), automargin=True)
     return fig
 
 # --- SECCIÓN: GRÁFICOS ---
