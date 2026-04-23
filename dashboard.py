@@ -315,7 +315,13 @@ def build_matrix(data, group_col):
     pivot_count = data.pivot_table(index=group_col, columns='ESTADO LIMPIO', values='MAF NETO_Num', aggfunc='count', fill_value=0)
     res = pd.DataFrame(index=pivot_sum.index)
     if group_col == 'SUPERVISOR':
-        res['ZONA'] = data.groupby('SUPERVISOR')['PLAZA DE VENTA'].agg(lambda x: x.mode()[0] if not x.mode().empty else 'N/A')
+        zonas_map = {
+            'NAHOMI': 'CHICLAYO', 'JORGE': 'CHICLAYO', 'JHON': 'CHICLAYO',
+            'WINNIE': 'LIMA', 'KENNY': 'LIMA', 'ANGIE': 'LIMA',
+            'MARIELLA': 'LIMA', 'LUIS CHUSE': 'LIMA', 'LUIS SHEPHERD': 'LIMA',
+            'LUIS MENDOZA': 'LIMA', 'JIMMY': 'TARAPOTO', 'JULIA': 'TRUJILLO',
+        }
+        res['ZONA'] = [zonas_map.get(s, 'N/A') for s in res.index]
     def g(p, c):
         return p[c] if c in p.columns else 0
     res['TOTAL DESEMBOLSO'] = g(pivot_sum, 'DESEMBOLSADO')
