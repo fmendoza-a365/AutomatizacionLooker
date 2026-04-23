@@ -352,15 +352,22 @@ def build_matrix(data, group_col):
     res['EVALUACION BCP'] = g(ps, 'EN EVALUACION BCP')
     res['PENDIENTE DE BACK'] = g(ps, 'PENDIENTE DE BACK OFFICE')
     res['PENDIENTE DE REMESA'] = g(ps, 'PENDIENTE DE REMESA')
-    # Lógica de Metas Dinámicas
+    # Lógica de Metas Dinámicas (LIMA, NORTE, OTROS)
     if group_col == 'SUPERVISOR':
         res['META OBJETIVO'] = [METAS_SUPERVISORES.get(s, 0) for s in res.index]
     else:
-        # Para plazas o zonas, sumamos las metas de los supervisores que pertenecen a ese grupo
-        plazas_metas = {}
+        # Mapeo de Zonas a Plazas Mayores
+        plazas_metas = {'LIMA': 0, 'NORTE': 0, 'OTROS': 0}
         for sup, meta in METAS_SUPERVISORES.items():
-            plaza = ZONAS_MAP.get(sup, 'OTROS')
-            plazas_metas[plaza] = plazas_metas.get(plaza, 0) + meta
+            zona = ZONAS_MAP.get(sup, 'OTROS')
+            if zona == 'LIMA':
+                plazas_metas['LIMA'] += meta
+            elif zona in NORTE:
+                plazas_metas['NORTE'] += meta
+            else:
+                plazas_metas['OTROS'] += meta
+        
+        # Asignar la meta según el grupo (REGION o ZONA corregida)
         res['META OBJETIVO'] = [plazas_metas.get(p, 1000000) for p in res.index]
         
     res['AVANCE'] = (res['TOTAL DESEMBOLSO'] / res['META OBJETIVO']).fillna(0)
