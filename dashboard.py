@@ -202,7 +202,9 @@ with c1:
         textfont=dict(size=11, family="Manrope", color="#1C1C1E")
     ))
     fig1 = clean_fig(fig1, 300)
-    fig1.update_layout(xaxis_title="", yaxis_title="")
+    # Ampliar el rango del eje X un 15% para dar espacio a la etiqueta
+    mx = v_sup['MAF NETO_Num'].max()
+    fig1.update_xaxes(range=[0, mx * 1.15] if mx > 0 else None, xaxis_title="", yaxis_title="")
     st.plotly_chart(fig1, use_container_width=True, config={'displayModeBar': False})
 
 with c2:
@@ -267,7 +269,9 @@ with c5:
             textfont=dict(size=10, family="Manrope", color="#1C1C1E")
         ))
         fig5 = clean_fig(fig5, 260)
-        fig5.update_layout(xaxis_title="", yaxis_title="")
+        # Espacio extra en el eje X
+        mx5 = top_asesores['MAF NETO_Num'].max()
+        fig5.update_xaxes(range=[0, mx5 * 1.15] if mx5 > 0 else None, xaxis_title="", yaxis_title="")
         st.plotly_chart(fig5, use_container_width=True, config={'displayModeBar': False})
     else:
         st.info("Columna de nombres no disponible.")
