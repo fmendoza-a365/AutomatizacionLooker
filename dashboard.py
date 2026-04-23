@@ -399,7 +399,7 @@ cc = {
     "PENDIENTE DE BACK": st.column_config.NumberColumn("Pend. Back", format="S/ %,.0f"),
     "PENDIENTE DE REMESA": st.column_config.NumberColumn("Pend. Remesa", format="S/ %,.0f"),
     "META OBJETIVO": st.column_config.NumberColumn("Meta", format="S/ %,.0f"),
-    "AVANCE": st.column_config.ProgressColumn("Avance", format="%.1f%%", min_value=0, max_value=1.0),
+    "AVANCE": st.column_config.ProgressColumn("Avance", format="%.0f%%", min_value=0, max_value=1.0),
     "Q DESEMBOLSO": st.column_config.NumberColumn("Q Desemb.", format="%,.0f"),
     "Q POR INGRESAR": st.column_config.NumberColumn("Q Ingr.", format="%,.0f"),
     "Q EVALUACION BCP": st.column_config.NumberColumn("Q Eval.", format="%,.0f"),
