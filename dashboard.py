@@ -32,31 +32,33 @@ st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
     html, body, [class*="css"] {{ font-family: 'Manrope', sans-serif !important; }}
-    #MainMenu, footer, header {{ visibility: hidden; }}
+    #MainMenu, footer {{ visibility: hidden; }}
     .block-container {{ padding-top: 0 !important; padding-bottom: 1rem !important; max-width: 1440px; }}
 
-    .topbar {{ display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid {BORDER}; margin-bottom:20px; }}
+    .topbar {{ display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid rgba(128,128,128,0.2); margin-bottom:20px; }}
     .topbar-left {{ display:flex; align-items:center; gap:14px; }}
-    .topbar-tag {{ font-size:11px; font-weight:700; color:{TEXT2}; text-transform:uppercase; letter-spacing:1px; }}
-    .topbar-right {{ font-size:11px; color:{TEXT2}; }}
+    .topbar-tag {{ font-size:11px; font-weight:700; opacity:0.5; text-transform:uppercase; letter-spacing:1px; }}
+    .topbar-right {{ font-size:11px; opacity:0.5; }}
 
     .kpi-grid {{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:24px; }}
-    .kpi {{ background:{CARD}; border:1px solid {BORDER}; border-radius:10px; padding:18px 20px; }}
-    .kpi-label {{ font-size:10px; font-weight:700; color:{TEXT2}; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px; }}
-    .kpi-val {{ font-size:26px; font-weight:800; color:{TEXT}; letter-spacing:-0.5px; }}
+    .kpi {{ border:1px solid rgba(128,128,128,0.2); border-radius:10px; padding:18px 20px; }}
+    .kpi-label {{ font-size:10px; font-weight:700; opacity:0.5; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px; }}
+    .kpi-val {{ font-size:26px; font-weight:800; letter-spacing:-0.5px; }}
     .kpi-val.accent {{ color:{ORANGE}; }}
-    .kpi-sub {{ font-size:11px; color:{TEXT2}; margin-top:2px; }}
+    .kpi-sub {{ font-size:11px; opacity:0.5; margin-top:2px; }}
 
     .sec {{ display:flex; align-items:center; gap:8px; margin:24px 0 12px 0; }}
     .sec-dot {{ width:8px; height:8px; border-radius:50%; background:{ORANGE}; }}
-    .sec-label {{ font-size:12px; font-weight:700; color:{TEXT2}; text-transform:uppercase; letter-spacing:0.5px; }}
+    .sec-label {{ font-size:12px; font-weight:700; opacity:0.5; text-transform:uppercase; letter-spacing:0.5px; }}
 
-    h1,h2,h3,h4 {{ font-weight:700 !important; color:{TEXT} !important; font-size:15px !important; }}
+    h1,h2,h3,h4 {{ font-weight:700 !important; font-size:15px !important; }}
     div[data-testid="stMetricLabel"], div[data-testid="stMetricValue"] {{ display:none; }}
-    div[data-testid="stDataFrame"] {{ border:1px solid {BORDER}; border-radius:8px; overflow:hidden; }}
+    div[data-testid="stDataFrame"] {{ border:1px solid rgba(128,128,128,0.2); border-radius:8px; overflow:hidden; }}
 
-    /* Fix filters visibility */
-    .stMultiSelect, .stSelectbox {{ margin-bottom:8px; }}
+    /* Multiselect: ocultar los chips/cuadraditos naranjas */
+    span[data-baseweb="tag"] {{ display:none !important; }}
+    div[data-baseweb="select"] > div {{ min-height: 38px !important; }}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -128,18 +130,18 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# --- PLOTLY DARK THEME ---
+# --- PLOTLY THEME ---
 PLOTLY_COLORS = ["#FF7A00", "#58A6FF", "#3FB950", "#D2A8FF", "#FFB300", "#F778BA", "#79C0FF", "#FFA657"]
 
-def dark_fig(fig, h=360):
+def style_fig(fig, h=360):
     fig.update_layout(
         plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
-        font=dict(family="Manrope", color=TEXT, size=12),
+        font=dict(family="Manrope", size=12),
         margin=dict(l=8, r=16, t=8, b=8), height=h,
-        legend=dict(orientation="h", yanchor="bottom", y=-0.35, xanchor="center", x=0.5, font=dict(size=10, color=TEXT2))
+        showlegend=False
     )
-    fig.update_xaxes(showgrid=False, zeroline=False, tickfont=dict(color=TEXT2, size=10))
-    fig.update_yaxes(showgrid=True, gridcolor="#21262D", zeroline=False, tickfont=dict(color=TEXT2, size=10))
+    fig.update_xaxes(showgrid=False, zeroline=False, tickfont=dict(size=10))
+    fig.update_yaxes(showgrid=True, gridcolor='rgba(128,128,128,0.15)', zeroline=False, tickfont=dict(size=10))
     return fig
 
 # --- CHARTS ---
@@ -154,9 +156,9 @@ with c1:
         y=vs['SUPERVISOR'], x=vs['MAF NETO_Num'], orientation='h',
         marker=dict(color=ORANGE, cornerradius=4),
         text=[f"S/ {v:,.0f}" for v in vs['MAF NETO_Num']], textposition='outside',
-        textfont=dict(color=TEXT, size=11)
+        textfont=dict(size=1)
     ))
-    fig1 = dark_fig(fig1, 380)
+    fig1 = style_fig(fig1, 380)
     fig1.update_layout(xaxis_title="", yaxis_title="")
     st.plotly_chart(fig1, use_container_width=True)
 
@@ -169,9 +171,9 @@ with c2:
         y=ep['Estado'], x=ep['Qty'], orientation='h',
         marker=dict(color=[PLOTLY_COLORS[i % len(PLOTLY_COLORS)] for i in range(len(ep))], cornerradius=4),
         text=ep['Qty'], textposition='outside',
-        textfont=dict(color=TEXT, size=11)
+        textfont=dict(size=1)
     ))
-    fig2 = dark_fig(fig2, 380)
+    fig2 = style_fig(fig2, 380)
     fig2.update_layout(xaxis_title="", yaxis_title="")
     st.plotly_chart(fig2, use_container_width=True)
 
@@ -185,9 +187,9 @@ with c3:
         x=vc['CONVENIO'], y=vc['MAF NETO_Num'],
         marker=dict(color=PLOTLY_COLORS[:len(vc)], cornerradius=4),
         text=[f"S/ {v:,.0f}" for v in vc['MAF NETO_Num']], textposition='outside',
-        textfont=dict(color=TEXT, size=10)
+        textfont=dict(size=1)
     ))
-    fig3 = dark_fig(fig3, 320)
+    fig3 = style_fig(fig3, 320)
     fig3.update_layout(xaxis_title="", yaxis_title="")
     st.plotly_chart(fig3, use_container_width=True)
 
@@ -196,11 +198,11 @@ with c4:
     vr = desemb.groupby('REGION')['MAF NETO_Num'].sum().reset_index()
     fig4 = go.Figure(go.Pie(
         labels=vr['REGION'], values=vr['MAF NETO_Num'], hole=0.55,
-        marker=dict(colors=["#58A6FF", "#FF7A00", "#3FB950"], line=dict(color=BG, width=3)),
+        marker=dict(colors=["#58A6FF", "#FF7A00", "#3FB950"], line=dict(color=" rgba 0 0 0 0.15 \, width=2)),
         textinfo='percent+label', textfont=dict(color=TEXT, size=12),
         insidetextorientation='radial'
     ))
-    fig4 = dark_fig(fig4, 320)
+    fig4 = style_fig(fig4, 320)
     st.plotly_chart(fig4, use_container_width=True)
 
 with c5:
@@ -209,11 +211,11 @@ with c5:
     es.columns = ['Estado', 'Qty']
     fig5 = go.Figure(go.Pie(
         labels=es['Estado'], values=es['Qty'], hole=0.55,
-        marker=dict(colors=PLOTLY_COLORS[:len(es)], line=dict(color=BG, width=3)),
-        textinfo='percent+label', textfont=dict(color=TEXT, size=10),
+        marker=dict(colors=PLOTLY_COLORS[:len(es)], line=dict(color=" rgba 0 0 0 0.15 \, width=2)),
+        textinfo='percent+label', textfont=dict(size=1),
         insidetextorientation='radial'
     ))
-    fig5 = dark_fig(fig5, 320)
+    fig5 = style_fig(fig5, 320)
     st.plotly_chart(fig5, use_container_width=True)
 
 # --- TABLAS ---
