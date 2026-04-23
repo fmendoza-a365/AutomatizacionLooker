@@ -290,24 +290,10 @@ with c4:
         marker=dict(colors=[REGION_COLORS.get(r, '#7A7A82') for r in v_reg['REGION']],
                     line=dict(color='#FFFFFF', width=2))
     ))
-    fig4 = clean_fig(fig4, 230)
-    fig4.update_traces(
-        textposition='inside', 
-        textinfo='percent',
-        hoverinfo='label+value+percent',
-        domain=dict(x=[0, 1], y=[0, 1])
-    )
+    fig4 = clean_fig(fig4, 260) # Altura normalizada para alinear la base de la tarjeta
     fig4.update_layout(
-        showlegend=True,
-        legend=dict(
-            orientation="h",
-            yanchor="top",
-            y=-0.05,
-            xanchor="center",
-            x=0.5,
-            font=dict(size=10)
-        ),
-        margin=dict(l=20, r=20, t=10, b=40), # Espacio abajo para la leyenda
+        showlegend=False,
+        margin=dict(l=100, r=100, t=30, b=30), # Margen grande para que el círculo se vea pequeño y centrado
         annotations=[dict(
             text=f'<span style="font-size:12px; font-weight:bold; color:#1A4FA0">S/ {monto_desembolso/1e6:.1f}M</span><br><span style="font-size:8px; color:#7A7A82">Total</span>', 
             x=0.5, y=0.5, showarrow=False, xanchor='center', yanchor='middle',
