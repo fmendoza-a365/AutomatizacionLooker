@@ -354,7 +354,8 @@ def build_matrix(data, group_col):
     res['PENDIENTE DE REMESA'] = g(ps, 'PENDIENTE DE REMESA')
     # Lógica de Metas Dinámicas (LIMA, NORTE, OTROS)
     if group_col == 'SUPERVISOR':
-        res['META OBJETIVO'] = [METAS_SUPERVISORES.get(s, 0) for s in res.index]
+        # Normalizamos el índice para asegurar el match con el diccionario
+        res['META OBJETIVO'] = [METAS_SUPERVISORES.get(str(s).upper().strip(), 1000000) for s in res.index]
     else:
         # Mapeo de Zonas a Plazas Mayores
         plazas_metas = {'LIMA': 0, 'NORTE': 0, 'OTROS': 0}
@@ -399,7 +400,7 @@ cc = {
     "PENDIENTE DE BACK": st.column_config.NumberColumn("Pend. Back", format="S/ %,.0f"),
     "PENDIENTE DE REMESA": st.column_config.NumberColumn("Pend. Remesa", format="S/ %,.0f"),
     "META OBJETIVO": st.column_config.NumberColumn("Meta", format="S/ %,.0f"),
-    "AVANCE": st.column_config.ProgressColumn("Avance", format="%.0f%%", min_value=0, max_value=1.0),
+    "AVANCE": st.column_config.ProgressColumn("Avance", format="%.1f%%", min_value=0, max_value=1.0),
     "Q DESEMBOLSO": st.column_config.NumberColumn("Q Desemb.", format="%,.0f"),
     "Q POR INGRESAR": st.column_config.NumberColumn("Q Ingr.", format="%,.0f"),
     "Q EVALUACION BCP": st.column_config.NumberColumn("Q Eval.", format="%,.0f"),
