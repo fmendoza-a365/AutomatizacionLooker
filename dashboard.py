@@ -371,13 +371,13 @@ def build_matrix(data, group_col):
         # Asignar la meta según el grupo (REGION o ZONA corregida)
         res['META OBJETIVO'] = [plazas_metas.get(p, 1000000) for p in res.index]
         
-    res['AVANCE'] = (res['TOTAL DESEMBOLSO'] / res['META OBJETIVO']).fillna(0)
+    res['AVANCE'] = (res['TOTAL DESEMBOLSO'] / res['META OBJETIVO'] * 100).fillna(0)
     res['Q POR INGRESAR'] = g(pc, 'POR INGRESAR')
     res['Q EVALUACION BCP'] = g(pc, 'EN EVALUACION BCP')
     res['Q PENDIENTE DE BACK'] = g(pc, 'PENDIENTE DE BACK OFFICE')
     tot = res.sum(numeric_only=True)
     if group_col == 'SUPERVISOR': tot['ZONA'] = ''
-    tot['AVANCE'] = (tot['TOTAL DESEMBOLSO'] / tot['META OBJETIVO']) if tot['META OBJETIVO'] > 0 else 0
+    tot['AVANCE'] = (tot['TOTAL DESEMBOLSO'] / tot['META OBJETIVO'] * 100) if tot['META OBJETIVO'] > 0 else 0
     res.loc['TOTAL'] = tot
     return res.reset_index()
 
@@ -400,7 +400,7 @@ cc = {
     "PENDIENTE DE BACK": st.column_config.NumberColumn("Pend. Back", format="S/ %,.0f"),
     "PENDIENTE DE REMESA": st.column_config.NumberColumn("Pend. Remesa", format="S/ %,.0f"),
     "META OBJETIVO": st.column_config.NumberColumn("Meta", format="S/ %,.0f"),
-    "AVANCE": st.column_config.ProgressColumn("Avance", format="%.1f%%", min_value=0, max_value=1.0),
+    "AVANCE": st.column_config.ProgressColumn("Avance", format="%.1f%%", min_value=0, max_value=100),
     "Q DESEMBOLSO": st.column_config.NumberColumn("Q Desemb.", format="%,.0f"),
     "Q POR INGRESAR": st.column_config.NumberColumn("Q Ingr.", format="%,.0f"),
     "Q EVALUACION BCP": st.column_config.NumberColumn("Q Eval.", format="%,.0f"),
