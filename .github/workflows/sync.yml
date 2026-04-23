@@ -2,8 +2,8 @@ name: Auto-Sync Google Sheets
 
 on:
   schedule:
-    # Ejecutar cada 10 minutos
-    - cron: '*/10 * * * *'
+    # Ejecutar cada 30 minutos
+    - cron: '*/30 * * * *'
   workflow_dispatch: # Permite ejecutar el script a mano con un botón en GitHub
 
 jobs:
