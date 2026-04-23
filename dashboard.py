@@ -79,16 +79,16 @@ def load_data():
     df['ESTADO LIMPIO'] = df['ESTADO LIMPIO'].fillna('SIN ESTADO')
     df['CONVENIO'] = df['CONVENIO'].fillna('SIN CONVENIO').str.strip().str.upper()
 
-    # Mapear plazas a regiones
-    norte = ['CHICLAYO', 'PIURA', 'TRUJILLO']
-    df['REGION'] = df['PLAZA DE VENTA'].apply(lambda x: 'LIMA' if x == 'LIMA' else ('NORTE' if x in norte else 'OTROS'))
-
     # Mapear zonas de supervisor
     zonas = {'NAHOMI':'CHICLAYO','JORGE':'CHICLAYO','JHON':'CHICLAYO',
              'WINNIE':'LIMA','KENNY':'LIMA','ANGIE':'LIMA','MARIELLA':'LIMA',
              'LUIS CHUSE':'LIMA','LUIS SHEPHERD':'LIMA','LUIS MENDOZA':'LIMA',
              'JIMMY':'TARAPOTO','JULIA':'TRUJILLO'}
     df['ZONA_SUP'] = df['SUPERVISOR'].map(zonas).fillna('N/A')
+
+    # La plaza/región se define por la zona del supervisor
+    norte = ['CHICLAYO', 'PIURA', 'TRUJILLO']
+    df['REGION'] = df['ZONA_SUP'].apply(lambda z: 'LIMA' if z == 'LIMA' else ('NORTE' if z in norte else 'OTROS'))
     return df
 
 with st.spinner('Conectando...'):
