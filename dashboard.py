@@ -80,40 +80,40 @@ st.markdown(f"""
         .block-container {{ padding-left: 1rem !important; padding-right: 1rem !important; }}
     }}
     /* Estilo Premium de Tarjetas */
-    .stPlotlyChart {
+    .stPlotlyChart {{
         background-color: #ffffff;
         border-radius: 12px;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
         border: 1px solid #f0f0f5;
         padding: 10px;
         transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    .stPlotlyChart:hover {
+    }}
+    .stPlotlyChart:hover {{
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
         transform: translateY(-2px);
-    }
+    }}
     
     /* Optimización Móvil */
-    @media (max-width: 768px) {
-        .kpi-row {
+    @media (max-width: 768px) {{
+        .kpi-row {{
             grid-template-columns: 1fr !important;
             gap: 12px !important;
-        }
-        .section-header {
+        }}
+        .section-header {{
             margin-top: 20px !important;
             padding: 12px !important;
-        }
-        [data-testid="stMetricValue"] {
+        }}
+        [data-testid="stMetricValue"] {{
             font-size: 1.8rem !important;
-        }
-    }
+        }}
+    }}
     
     /* Ajuste de Espaciado General */
-    .block-container {
+    .block-container {{
         padding-top: 2rem !important;
         padding-bottom: 2rem !important;
         max-width: 95% !important;
-    }
+    }}
 </style>
 """, unsafe_allow_html=True)
 
