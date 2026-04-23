@@ -198,8 +198,8 @@ with c4:
     vr = desemb.groupby('REGION')['MAF NETO_Num'].sum().reset_index()
     fig4 = go.Figure(go.Pie(
         labels=vr['REGION'], values=vr['MAF NETO_Num'], hole=0.55,
-        marker=dict(colors=["#58A6FF", "#FF7A00", "#3FB950"], line=dict(color=" rgba 0 0 0 0.15 \, width=2)),
-        textinfo='percent+label', textfont=dict(color=TEXT, size=12),
+        marker=dict(colors=["#58A6FF", "#FF7A00", "#3FB950"], line=dict(color='rgba(0,0,0,0.15)', width=2)),
+        textinfo='percent+label', textfont=dict(size=12),
         insidetextorientation='radial'
     ))
     fig4 = style_fig(fig4, 320)
@@ -211,8 +211,8 @@ with c5:
     es.columns = ['Estado', 'Qty']
     fig5 = go.Figure(go.Pie(
         labels=es['Estado'], values=es['Qty'], hole=0.55,
-        marker=dict(colors=PLOTLY_COLORS[:len(es)], line=dict(color=" rgba 0 0 0 0.15 \, width=2)),
-        textinfo='percent+label', textfont=dict(size=1),
+        marker=dict(colors=PLOTLY_COLORS[:len(es)], line=dict(color='rgba(0,0,0,0.15)', width=2)),
+        textinfo='percent+label', textfont=dict(size=10),
         insidetextorientation='radial'
     ))
     fig5 = style_fig(fig5, 320)
