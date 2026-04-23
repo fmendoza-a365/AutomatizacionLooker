@@ -392,18 +392,18 @@ def build_plaza_matrix(data):
 df_plaza = build_plaza_matrix(m_df)
 
 cc = {
-    "TOTAL DESEMBOLSO": st.column_config.NumberColumn("Total Desembolso", format="S/ %d"),
-    "APROBADA": st.column_config.NumberColumn("Aprobada", format="S/ %d"),
-    "POR INGRESAR": st.column_config.NumberColumn("Por Ingresar", format="S/ %d"),
-    "EVALUACION BCP": st.column_config.NumberColumn("Eval. BCP", format="S/ %d"),
-    "PENDIENTE DE BACK": st.column_config.NumberColumn("Pend. Back", format="S/ %d"),
-    "PENDIENTE DE REMESA": st.column_config.NumberColumn("Pend. Remesa", format="S/ %d"),
-    "META OBJETIVO": st.column_config.NumberColumn("Meta", format="S/ %d"),
+    "TOTAL DESEMBOLSO": st.column_config.NumberColumn("Total Desembolso", format="S/ %,.0f"),
+    "APROBADA": st.column_config.NumberColumn("Aprobada", format="S/ %,.0f"),
+    "POR INGRESAR": st.column_config.NumberColumn("Por Ingresar", format="S/ %,.0f"),
+    "EVALUACION BCP": st.column_config.NumberColumn("Eval. BCP", format="S/ %,.0f"),
+    "PENDIENTE DE BACK": st.column_config.NumberColumn("Pend. Back", format="S/ %,.0f"),
+    "PENDIENTE DE REMESA": st.column_config.NumberColumn("Pend. Remesa", format="S/ %,.0f"),
+    "META OBJETIVO": st.column_config.NumberColumn("Meta", format="S/ %,.0f"),
     "AVANCE": st.column_config.ProgressColumn("Avance", format="%.1f%%", min_value=0, max_value=1.0),
-    "Q DESEMBOLSO": st.column_config.NumberColumn("Q Desemb.", format="%d"),
-    "Q POR INGRESAR": st.column_config.NumberColumn("Q Ingr.", format="%d"),
-    "Q EVALUACION BCP": st.column_config.NumberColumn("Q Eval.", format="%d"),
-    "Q PENDIENTE DE BACK": st.column_config.NumberColumn("Q Back", format="%d"),
+    "Q DESEMBOLSO": st.column_config.NumberColumn("Q Desemb.", format="%,.0f"),
+    "Q POR INGRESAR": st.column_config.NumberColumn("Q Ingr.", format="%,.0f"),
+    "Q EVALUACION BCP": st.column_config.NumberColumn("Q Eval.", format="%,.0f"),
+    "Q PENDIENTE DE BACK": st.column_config.NumberColumn("Q Back", format="%,.0f"),
 }
 
 tab1, tab2 = st.tabs(["Por Supervisor", "Por Plaza"])
