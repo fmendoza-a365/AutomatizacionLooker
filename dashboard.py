@@ -174,7 +174,7 @@ def clean_fig(fig, h=300):
     fig.update_layout(
         plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
         font=dict(family="Manrope", color="#1C1C1E", size=11),
-        margin=dict(l=100, r=10, t=10, b=10), height=h,
+        margin=dict(l=10, r=10, t=10, b=10), height=h,
             dragmode=False,
     )
     fig.update_xaxes(showgrid=False, zeroline=False, tickfont=dict(size=9), automargin=True)
