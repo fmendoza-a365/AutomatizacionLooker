@@ -293,8 +293,11 @@ with c4:
     fig4 = clean_fig(fig4, 320) # Más alto para destacar
     fig4.update_layout(
         showlegend=False,
-        annotations=[dict(text=f'S/ {monto_desembolso/1e6:.1f}M<br><span style="font-size:10px;color:#7A7A82">Total</span>', 
-                          x=0.5, y=0.5, font_size=16, font_family="Manrope", font_weight=700, showarrow=False)]
+        annotations=[dict(
+            text=f'<span style="font-size:16px; font-weight:bold; color:#1A4FA0">S/ {monto_desembolso/1e6:.1f}M</span><br><span style="font-size:10px; color:#7A7A82">Total</span>', 
+            x=0.5, y=0.5, showarrow=False,
+            font=dict(family="Manrope")
+        )]
     )
     st.plotly_chart(fig4, use_container_width=True, config={'displayModeBar': False})
 
