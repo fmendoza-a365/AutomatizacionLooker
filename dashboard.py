@@ -7,18 +7,23 @@ import base64
 ZONAS_MAP = {
     'NAHOMI DIAZ': 'CHICLAYO', 'JORGE RAMIREZ': 'CHICLAYO', 'JHON ZAMORA': 'CHICLAYO',
     'MILAGROS TUESTA': 'LIMA', 'KENNY MORALES': 'LIMA', 'ANGIE SILVERA': 'LIMA', 'MARIELLA PAÑAHUA': 'LIMA',
-    'LUIS CHUSE': 'LIMA', 'LUIS SHEPERD': 'LIMA', 'LUIS MENDOZA': 'LIMA',
+    'LUIS CHUSE': 'LIMA', 'LUIS SHEPHERD': 'LIMA', 'LUIS MENDOZA': 'LIMA',
     'JIMMY COLLAZOS': 'TARAPOTO', 'JULIA OBLITAS': 'TRUJILLO',
+    'WINNIE': 'LIMA'
 }
-META_GLOBAL = 11950000.00
 NORTE = ['CHICLAYO', 'PIURA', 'TRUJILLO']
 
-METAS_SUPERVISORES = {
+# --- METAS DINÁMICAS ---
+METAS_BASE = {
     'ANGIE SILVERA': 1000000, 'NAHOMI DIAZ': 1000000, 'MILAGROS TUESTA': 1000000,
     'JHON ZAMORA': 1000000, 'MARIELLA PAÑAHUA': 650000, 'JIMMY COLLAZOS': 650000,
     'KENNY MORALES': 650000, 'LUIS CHUSE': 1000000, 'JULIA OBLITAS': 1000000,
-    'JORGE RAMIREZ': 1000000, 'LUIS SHEPERD': 500000, 'LUIS MENDOZA': 500000
+    'JORGE RAMIREZ': 1000000, 'LUIS SHEPHERD': 500000, 'LUIS MENDOZA': 500000
 }
+
+# Creamos el diccionario final incluyendo alias sin duplicar para el cálculo global
+METAS_SUPERVISORES = {**METAS_BASE, 'WINNIE': METAS_BASE['MILAGROS TUESTA']}
+META_GLOBAL = sum(METAS_BASE.values())
 
 ESTADO_COLORS = {
     'POR INGRESAR': '#2B7DE9', 'EN EVALUACION BCP': '#E6A817', 'APROBADA': '#2D9A3F',
@@ -368,7 +373,7 @@ def build_matrix(data, group_col):
     else:
         # Mapeo de Zonas a Plazas Mayores
         plazas_metas = {'LIMA': 0, 'NORTE': 0, 'OTROS': 0}
-        for sup, meta in METAS_SUPERVISORES.items():
+        for sup, meta in METAS_BASE.items():
             zona = ZONAS_MAP.get(sup, 'OTROS')
             if zona == 'LIMA':
                 plazas_metas['LIMA'] += meta
