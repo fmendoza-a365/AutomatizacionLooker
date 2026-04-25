@@ -61,10 +61,10 @@ st.markdown(f"""
     .topbar-title {{ font-size:13px; font-weight:600; color:#7B7B8A; letter-spacing:0.5px; text-transform:uppercase; }}
     .topbar-right {{ font-size:12px; color:#7B7B8A; display:flex; align-items:center; gap:6px; }}
 
-    .section-header {{ display:flex; align-items:center; gap:8px; margin:28px 0 14px 0; padding-bottom:6px; border-bottom:2px solid #1A4FA0; }}
-    .section-icon {{ width:20px; height:20px; border-radius:4px; background:#E67212; display:flex; align-items:center; justify-content:center; flex-shrink:0; }}
-    .section-icon svg {{ width:12px; height:12px; fill:white; }}
-    .section-label {{ font-size:13px; font-weight:700; color:#1A4FA0; text-transform:uppercase; letter-spacing:0.4px; }}
+    .section-header {{ display:flex; align-items:center; gap:8px; margin:28px 0 0 0; padding:12px 16px; background:#FFF7ED; border-radius:10px 10px 0 0; border-bottom:2px solid #E67212; }}
+    .section-icon {{ width:24px; height:24px; border-radius:6px; background:#E67212; display:flex; align-items:center; justify-content:center; flex-shrink:0; }}
+    .section-icon svg {{ width:14px; height:14px; fill:white; }}
+    .section-label {{ font-size:14px; font-weight:800; color:#E67212; text-transform:uppercase; letter-spacing:0.5px; }}
 
     /* KPI row — responsive con auto-fit */
     .kpi-row {{ display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:14px; margin-bottom:24px; }}
@@ -422,10 +422,17 @@ cc = {
 }
 
 tab1, tab2 = st.tabs(["Por Supervisor", "Por Plaza"])
+
+def color_total_row(row):
+    is_total = any(str(val).upper() == 'TOTAL' for val in row.values)
+    return ['background-color: #FFF7ED; font-weight: 700; color: #E67212' if is_total else '' for _ in row]
+
 with tab1:
-    if not df_super.empty: st.dataframe(df_super, use_container_width=True, hide_index=True, column_config=cc)
+    if not df_super.empty: 
+        st.dataframe(df_super.style.apply(color_total_row, axis=1), use_container_width=True, hide_index=True, column_config=cc)
 with tab2:
-    if not df_plaza.empty: st.dataframe(df_plaza, use_container_width=True, hide_index=True, column_config=cc)
+    if not df_plaza.empty: 
+        st.dataframe(df_plaza.style.apply(color_total_row, axis=1), use_container_width=True, hide_index=True, column_config=cc)
 
 # --- DETALLE ---
 st.markdown("""<div class="section-header">
