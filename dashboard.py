@@ -425,7 +425,7 @@ tab1, tab2 = st.tabs(["Por Supervisor", "Por Plaza"])
 
 def color_total_row(row):
     is_total = any(str(val).upper() == 'TOTAL' for val in row.values)
-    return ['background-color: #FFF7ED; font-weight: 700;' if is_total else '' for _ in row]
+    return ['background-color: #FFEDD5; font-weight: 700;' if is_total else '' for _ in row]
 
 with tab1:
     if not df_super.empty: 
