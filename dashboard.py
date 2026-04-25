@@ -61,10 +61,10 @@ st.markdown(f"""
     .topbar-title {{ font-size:13px; font-weight:600; color:#7B7B8A; letter-spacing:0.5px; text-transform:uppercase; }}
     .topbar-right {{ font-size:12px; color:#7B7B8A; display:flex; align-items:center; gap:6px; }}
 
-    .section-header {{ display:flex; align-items:center; gap:8px; margin:28px 0 14px 0; padding:8px 12px; background-color: #FFF7ED; border-radius: 6px; border-bottom:2px solid #E67212; }}
+    .section-header {{ display:flex; align-items:center; gap:8px; margin:28px 0 14px 0; padding-bottom:6px; border-bottom:2px solid #1A4FA0; }}
     .section-icon {{ width:20px; height:20px; border-radius:4px; background:#E67212; display:flex; align-items:center; justify-content:center; flex-shrink:0; }}
     .section-icon svg {{ width:12px; height:12px; fill:white; }}
-    .section-label {{ font-size:13px; font-weight:700; color:#E67212; text-transform:uppercase; letter-spacing:0.4px; }}
+    .section-label {{ font-size:13px; font-weight:700; color:#1A4FA0; text-transform:uppercase; letter-spacing:0.4px; }}
 
     /* KPI row — responsive con auto-fit */
     .kpi-row {{ display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:14px; margin-bottom:24px; }}
