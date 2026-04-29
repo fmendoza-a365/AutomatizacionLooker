@@ -2,6 +2,21 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import base64
+from io import BytesIO
+
+# --- HELPER EXCEL ---
+def to_excel(df):
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Sheet1')
+    return output.getvalue()
+
+def create_download_link(df, filename, label):
+    data = to_excel(df)
+    b64 = base64.b64encode(data).decode()
+    href = f'data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64}'
+    icon_svg = """<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/></svg>"""
+    return f'<a href="{href}" download="{filename}" class="export-button">{icon_svg}&nbsp;&nbsp;{label}</a>'
 
 # --- CONSTANTES ---
 ZONAS_MAP = {
@@ -121,11 +136,33 @@ st.markdown(f"""
         }}
     }}
     
-    /* Ajuste de Espaciado General */
-    .block-container {{
-        padding-top: 2rem !important;
-        padding-bottom: 2rem !important;
-        max-width: 95% !important;
+    /* Estilo Premium para Botones de Exportación */
+    .export-button {{
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 7px 15px;
+        background-color: #FFFFFF;
+        color: #1A4FA0 !important;
+        border: 1px solid #1A4FA0;
+        border-radius: 8px;
+        text-decoration: none !important;
+        font-size: 12px;
+        font-weight: 700;
+        margin-top: 12px;
+        margin-bottom: 12px;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }}
+    .export-button:hover {{
+        background-color: #1A4FA0;
+        color: #FFFFFF !important;
+        box-shadow: 0 4px 8px rgba(26, 79, 160, 0.2);
+        transform: translateY(-1px);
+    }}
+    .export-button svg {{
+        margin-right: 8px;
     }}
 </style>
 """, unsafe_allow_html=True)
@@ -435,9 +472,11 @@ def color_total_row(row):
 with tab1:
     if not df_super.empty: 
         st.dataframe(df_super.style.apply(color_total_row, axis=1), use_container_width=True, hide_index=True, column_config=cc)
+        st.markdown(create_download_link(df_super, "Gestion_Supervisor.xlsx", "Exportar Supervisor"), unsafe_allow_html=True)
 with tab2:
     if not df_plaza.empty: 
         st.dataframe(df_plaza.style.apply(color_total_row, axis=1), use_container_width=True, hide_index=True, column_config=cc)
+        st.markdown(create_download_link(df_plaza, "Gestion_Plaza.xlsx", "Exportar Plaza"), unsafe_allow_html=True)
 
 # --- DETALLE ---
 st.markdown("""<div class="section-header">
@@ -473,6 +512,7 @@ with st.expander("Detalle detallado por estado", expanded=True):
             
             if not df_tab.empty:
                 st.dataframe(df_tab, use_container_width=True, hide_index=True)
+                st.markdown(create_download_link(df_tab, f"Detalle_{nombre_tab.replace(' ', '_')}.xlsx", f"Exportar {nombre_tab}"), unsafe_allow_html=True)
             else:
                 st.info(f"No hay operaciones en estado: {nombre_tab}")
 
