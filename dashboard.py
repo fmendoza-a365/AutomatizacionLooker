@@ -273,10 +273,32 @@ def clean_fig(fig, h=300):
     return fig
 
 # --- SECCIÓN: GRÁFICOS ---
-st.markdown("""<div class="section-header">
-    <div class="section-icon"><svg viewBox="0 0 24 24"><path d="M3 13h2v8H3zm4-4h2v12H7zm4-2h2v14h-2zm4 6h2v8h-2zm4-8h2v16h-2z"/></svg></div>
-    <span class="section-label">Análisis de Rendimiento</span>
-</div>""", unsafe_allow_html=True)
+c_head1, c_head2 = st.columns([3, 1])
+with c_head1:
+    st.markdown("""<div class="section-header" style="margin-top:10px;">
+        <div class="section-icon"><svg viewBox="0 0 24 24"><path d="M3 13h2v8H3zm4-4h2v12H7zm4-2h2v14h-2zm4 6h2v8h-2zm4-8h2v16h-2z"/></svg></div>
+        <span class="section-label">Análisis de Rendimiento</span>
+    </div>""", unsafe_allow_html=True)
+
+with c_head2:
+    st.markdown('<div style="margin-top:18px;">', unsafe_allow_html=True)
+    with st.popover("🔍 Filtrar por Zona", use_container_width=True):
+        st.markdown("**Seleccionar Zonas**")
+        # Obtenemos zonas del df ya filtrado por la sidebar para mantener coherencia
+        zonas_disponibles = sorted([z for z in filtered_df['ZONA_SUP'].unique() if z != 'N/A'])
+        selected_zonas_sec = []
+        for zona in zonas_disponibles:
+            if st.checkbox(zona, value=True, key=f"sec_{zona}"):
+                selected_zonas_sec.append(zona)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# DF específico para esta sección
+if not selected_zonas_sec:
+    section_df = filtered_df.iloc[:0] # Vacío si no hay nada seleccionado
+else:
+    section_df = filtered_df[filtered_df['ZONA_SUP'].isin(selected_zonas_sec)]
+
+desembolsado_sec = section_df[section_df['ESTADO LIMPIO'] == 'DESEMBOLSADO']
 
 title_style = 'style="font-size:15px; font-weight:700; color:#1A4FA0; margin-bottom:12px; margin-top:0px;"'
 
@@ -285,7 +307,7 @@ c1, c2 = st.columns([3, 2])
 
 with c1:
     st.markdown(f'<p {title_style}>Desembolso por Supervisor</p>', unsafe_allow_html=True)
-    v_sup = desembolsado_df.groupby('SUPERVISOR')['MAF NETO_Num'].sum().reset_index().sort_values('MAF NETO_Num', ascending=True)
+    v_sup = desembolsado_sec.groupby('SUPERVISOR')['MAF NETO_Num'].sum().reset_index().sort_values('MAF NETO_Num', ascending=True)
     fig1 = go.Figure(go.Bar(
         y=v_sup['SUPERVISOR'], x=v_sup['MAF NETO_Num'], orientation='h',
         marker=dict(color='#E67212', cornerradius=4),
@@ -302,7 +324,7 @@ with c1:
 
 with c2:
     st.markdown(f'<p {title_style}>Funnel por Estado</p>', unsafe_allow_html=True)
-    e_dist = filtered_df.groupby('ESTADO LIMPIO').agg(
+    e_dist = section_df.groupby('ESTADO LIMPIO').agg(
         Cantidad=('ESTADO LIMPIO', 'count'),
         Monto=('MAF NETO_Num', 'sum')
     ).reset_index().rename(columns={'ESTADO LIMPIO': 'Estado'})
@@ -332,7 +354,7 @@ c3, c4, c5 = st.columns(3)
 
 with c3:
     st.markdown(f'<p {title_style}>Desembolso por Convenio</p>', unsafe_allow_html=True)
-    v_conv = desembolsado_df.groupby('CONVENIO')['MAF NETO_Num'].sum().reset_index().sort_values('MAF NETO_Num', ascending=False)
+    v_conv = desembolsado_sec.groupby('CONVENIO')['MAF NETO_Num'].sum().reset_index().sort_values('MAF NETO_Num', ascending=False)
     fig3 = go.Figure(go.Bar(
         x=v_conv['CONVENIO'], y=v_conv['MAF NETO_Num'],
         marker=dict(color='#1A4FA0', cornerradius=4), # Usamos Azul BCP para variar del naranja
@@ -345,7 +367,7 @@ with c3:
 
 with c4:
     st.markdown(f'<p {title_style}>Distribución por Región</p>', unsafe_allow_html=True)
-    v_reg = desembolsado_df.groupby('REGION')['MAF NETO_Num'].sum().reset_index().sort_values('MAF NETO_Num', ascending=False)
+    v_reg = desembolsado_sec.groupby('REGION')['MAF NETO_Num'].sum().reset_index().sort_values('MAF NETO_Num', ascending=False)
     fig4 = go.Figure(go.Pie(
         labels=v_reg['REGION'], values=v_reg['MAF NETO_Num'], hole=0.7,
         textposition='outside', textinfo='label+percent',
@@ -367,8 +389,8 @@ with c4:
 
 with c5:
     st.markdown(f'<p {title_style}>Top Ejecutivos por Desembolso</p>', unsafe_allow_html=True)
-    if 'EJECUTIVO' in desembolsado_df.columns:
-        top_asesores = desembolsado_df.groupby('EJECUTIVO')['MAF NETO_Num'].sum().nlargest(5).reset_index()
+    if 'EJECUTIVO' in desembolsado_sec.columns:
+        top_asesores = desembolsado_sec.groupby('EJECUTIVO')['MAF NETO_Num'].sum().nlargest(5).reset_index()
         top_asesores = top_asesores.sort_values('MAF NETO_Num', ascending=True)
         top_asesores['Nombre'] = top_asesores['EJECUTIVO'].apply(lambda n: str(n)[:20] + '...' if len(str(n)) > 20 else str(n))
         fig5 = go.Figure(go.Bar(
