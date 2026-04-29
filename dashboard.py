@@ -265,16 +265,21 @@ with c1:
 
 with c2:
     st.markdown(f'<p {title_style}>Funnel por Estado</p>', unsafe_allow_html=True)
-    e_dist = filtered_df['ESTADO LIMPIO'].value_counts().reset_index()
-    e_dist.columns = ['Estado', 'Cantidad']
+    e_dist = filtered_df.groupby('ESTADO LIMPIO').agg(
+        Cantidad=('ESTADO LIMPIO', 'count'),
+        Monto=('MAF NETO_Num', 'sum')
+    ).reset_index().rename(columns={'ESTADO LIMPIO': 'Estado'})
     e_dist = e_dist.sort_values('Cantidad', ascending=True) # Mayor a menor (Plotly dibuja de abajo a arriba)
     
     fig2 = go.Figure()
     for _, row in e_dist.iterrows():
+        # Formatear el monto de forma compacta
+        monto_f = f"S/ {row['Monto']:,.0f}" if row['Monto'] < 1000000 else f"S/ {row['Monto']/1e6:.1f}M"
         fig2.add_trace(go.Bar(
             y=[row['Estado']], x=[row['Cantidad']], orientation='h',
             marker=dict(color=ESTADO_COLORS.get(row['Estado'], '#7A7A82'), cornerradius=4),
-            text=[str(int(row['Cantidad']))], textposition='outside',
+            text=[f"{int(row['Cantidad'])} ({monto_f})"], textposition='outside',
+            hovertemplate=f"<b>{row['Estado']}</b><br>Cantidad: {int(row['Cantidad'])}<br>Monto: {monto_f}<extra></extra>",
             textfont=dict(size=11, family="Manrope"), showlegend=False,
             cliponaxis=False
         ))
