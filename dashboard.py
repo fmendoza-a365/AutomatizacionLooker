@@ -445,16 +445,18 @@ st.markdown("""<div class="section-header">
     <span class="section-label">Detalle de Operaciones</span>
 </div>""", unsafe_allow_html=True)
 
-with st.expander("Expandir detalle por estado"):
+with st.expander("Detalle detallado por estado", expanded=True):
     # Limpieza de columnas para el detalle
     bad_cols = ['MAF NETO_Num', 'ZONA_SUP', 'REGION', 'PLAZA DE VENTA', 'FECHA FILTRO', 'FECHA DE INGRESO', 'FECHA DE DESEMBOLSO']
     show_df = filtered_df.copy()
     show_df = show_df.loc[:, ~show_df.columns.str.contains('^Unnamed')]
     show_df = show_df.drop(columns=[c for c in bad_cols if c in show_df.columns])
     
-    # Crear lista de estados únicos (excluyendo vacíos) y añadir "Todos" al inicio
-    estados_unicos = sorted([e for e in show_df['ESTADO LIMPIO'].unique() if e != 'SIN ESTADO'])
-    tabs_nombres = ["Todos"] + estados_unicos
+    # Crear lista de estados únicos (excluyendo vacíos)
+    estados_raw = sorted([e for e in show_df['ESTADO LIMPIO'].unique() if e != 'SIN ESTADO'])
+    
+    # "Todos" + Estados en formato Nombre Propio
+    tabs_nombres = ["Todos"] + [e.title() for e in estados_raw]
     
     # Crear las pestañas
     tabs_detalle = st.tabs(tabs_nombres)
@@ -465,7 +467,9 @@ with st.expander("Expandir detalle por estado"):
             if nombre_tab == "Todos":
                 df_tab = show_df
             else:
-                df_tab = show_df[show_df['ESTADO LIMPIO'] == nombre_tab]
+                # Buscamos el estado original (en mayúsculas) para filtrar correctamente
+                estado_original = estados_raw[i-1] 
+                df_tab = show_df[show_df['ESTADO LIMPIO'] == estado_original]
             
             if not df_tab.empty:
                 st.dataframe(df_tab, use_container_width=True, hide_index=True)
