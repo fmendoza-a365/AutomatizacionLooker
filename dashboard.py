@@ -445,13 +445,30 @@ st.markdown("""<div class="section-header">
     <span class="section-label">Detalle de Operaciones</span>
 </div>""", unsafe_allow_html=True)
 
-with st.expander("Expandir tabla completa"):
-    # Limpieza de columnas feas para el detalle
+with st.expander("Expandir detalle por estado"):
+    # Limpieza de columnas para el detalle
     bad_cols = ['MAF NETO_Num', 'ZONA_SUP', 'REGION', 'PLAZA DE VENTA', 'FECHA FILTRO', 'FECHA DE INGRESO', 'FECHA DE DESEMBOLSO']
     show_df = filtered_df.copy()
-    # Eliminar columnas Unnamed
     show_df = show_df.loc[:, ~show_df.columns.str.contains('^Unnamed')]
-    # Eliminar otras columnas técnicas
     show_df = show_df.drop(columns=[c for c in bad_cols if c in show_df.columns])
-    st.dataframe(show_df, use_container_width=True, hide_index=True)
+    
+    # Crear lista de estados únicos (excluyendo vacíos) y añadir "Todos" al inicio
+    estados_unicos = sorted([e for e in show_df['ESTADO LIMPIO'].unique() if e != 'SIN ESTADO'])
+    tabs_nombres = ["Todos"] + estados_unicos
+    
+    # Crear las pestañas
+    tabs_detalle = st.tabs(tabs_nombres)
+    
+    for i, tab in enumerate(tabs_detalle):
+        with tab:
+            nombre_tab = tabs_nombres[i]
+            if nombre_tab == "Todos":
+                df_tab = show_df
+            else:
+                df_tab = show_df[show_df['ESTADO LIMPIO'] == nombre_tab]
+            
+            if not df_tab.empty:
+                st.dataframe(df_tab, use_container_width=True, hide_index=True)
+            else:
+                st.info(f"No hay operaciones en estado: {nombre_tab}")
 
