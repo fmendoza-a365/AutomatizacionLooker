@@ -265,13 +265,25 @@ def load_data():
 with st.spinner('Conectando...'):
     df = load_data()
 
+# --- FILTROS GLOBALES SUPERIORES ---
+c_f1, c_f2 = st.columns([1, 3])
+with c_f1:
+    mes_opts = sorted(df['MES'].dropna().unique().tolist())
+    with st.popover("📅 Seleccionar Mes", use_container_width=True):
+        st.markdown("**Meses de Gestión**")
+        selected_mes = []
+        for m in mes_opts:
+            if st.checkbox(m, value=True, key=f"global_mes_{m}"):
+                selected_mes.append(m)
+with c_f2:
+    # Espacio para info o dejar vacío para alinear a la izquierda
+    st.markdown('<div style="margin-top:10px; color:#7B7B8A; font-size:12px;">Filtro global: Afecta a KPIs, Gráficos y Tablas</div>', unsafe_allow_html=True)
+
 # --- SIDEBAR ---
 with st.sidebar:
     st.markdown(f'<div style="text-align:center;padding:12px 0 8px 0;">{logo_html}</div>', unsafe_allow_html=True)
     st.markdown("---")
-    st.markdown("**Filtros**")
-    mes_opts = sorted(df['MES'].dropna().unique().tolist())
-    selected_mes = st.multiselect("Mes", mes_opts, default=mes_opts)
+    st.markdown("**Filtros Adicionales**")
     
     region_opts = ['LIMA', 'NORTE', 'OTROS']
     selected_region = st.multiselect("Plaza", region_opts, default=region_opts)
