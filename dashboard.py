@@ -210,8 +210,14 @@ def load_data():
                         df_sheet['SUPERVISOR'] = sheet
                         all_dfs.append(df_sheet)
     except Exception as e:
-        print(f"Error cargando Mayo: {e}")
+        st.error(f"Error técnico cargando Mayo: {e}")
         pass
+
+    # Guardar info de diagnóstico para el usuario
+    st.session_state['debug_mayo'] = {
+        'sheets_procesadas': xls.sheet_names if 'xls' in locals() else [],
+        'mayo_cargado': len(all_dfs) > 0
+    }
 
     if all_dfs:
         df_mayo = pd.concat(all_dfs, ignore_index=True)
@@ -264,6 +270,18 @@ def load_data():
 
 with st.spinner('Conectando...'):
     df = load_data()
+
+# --- DIAGNÓSTICO DE DATOS (Solo si Mayo falla) ---
+if not st.session_state.get('debug_mayo', {}).get('mayo_cargado', False):
+    with st.expander("⚠️ Aviso: No se detectaron datos de Mayo", expanded=False):
+        st.warning("No se encontraron registros válidos en el archivo de Mayo.")
+        st.info(f"Hojas encontradas: {', '.join(st.session_state.get('debug_mayo', {}).get('sheets_procesadas', []))}")
+        st.markdown("""
+        **Posibles causas:**
+        1. Ninguna hoja tiene una columna llamada exactamente **'PLAZA DE VENTA'**.
+        2. Las hojas están vacías.
+        3. El archivo no es accesible actualmente.
+        """)
 
 # --- FILTROS GLOBALES SUPERIORES ---
 c_f1, c_f2 = st.columns([1, 3])
