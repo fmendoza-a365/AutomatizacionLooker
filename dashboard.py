@@ -174,13 +174,13 @@ st.markdown(f"""
     <div class="topbar-left">{logo_html}<span class="topbar-title">Centro de Operaciones</span></div>
     <div class="topbar-right">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="#7B7B8A"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 11h-2V7h2zm0 4h-2v-2h2z"/></svg>
-        Datos actualizados cada 5 min
+        Datos actualizados cada 1 min
     </div>
 </div>
 """, unsafe_allow_html=True)
 
 # --- DATA ---
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=60)
 def load_data():
     # --- ABRIL ---
     url_abril = "https://docs.google.com/spreadsheets/d/16PzK230jtrjkpHYq5mYSFrdeXk-0B6N7/export?format=csv&gid=305780908"
