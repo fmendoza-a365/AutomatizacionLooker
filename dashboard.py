@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import base64
 from io import BytesIO
+import requests
 
 # --- HELPER EXCEL ---
 def to_excel(df):
@@ -181,21 +182,84 @@ st.markdown(f"""
 # --- DATA ---
 @st.cache_data(ttl=300)
 def load_data():
-    url = "https://docs.google.com/spreadsheets/d/16PzK230jtrjkpHYq5mYSFrdeXk-0B6N7/export?format=csv&gid=305780908"
-    df = pd.read_csv(url)
+    # --- ABRIL ---
+    url_abril = "https://docs.google.com/spreadsheets/d/16PzK230jtrjkpHYq5mYSFrdeXk-0B6N7/export?format=csv&gid=305780908"
+    df_abril = pd.read_csv(url_abril)
+    df_abril['MES'] = 'ABRIL'
+    
+    # --- MAYO ---
+    url_mayo = "https://docs.google.com/spreadsheets/d/1zJONhh_3kih4HZUNvi3DC4Ybou84U-SUsiaOdbwEVJw/export?format=xlsx"
+    all_dfs = []
+    try:
+        res = requests.get(url_mayo)
+        if res.status_code == 200:
+            xls = pd.ExcelFile(BytesIO(res.content))
+            for sheet in xls.sheet_names:
+                df_raw = pd.read_excel(xls, sheet_name=sheet, header=None)
+                header_idx = -1
+                for idx, row in df_raw.iterrows():
+                    if row.astype(str).str.contains('PLAZA DE VENTA', na=False, case=False).any():
+                        header_idx = idx
+                        break
+                if header_idx != -1:
+                    df_raw.columns = df_raw.iloc[header_idx]
+                    df_sheet = df_raw.iloc[header_idx + 1:].copy()
+                    df_sheet = df_sheet.loc[:, df_sheet.columns.notna()]
+                    df_sheet = df_sheet.dropna(how='all')
+                    if not df_sheet.empty:
+                        df_sheet['SUPERVISOR'] = sheet
+                        all_dfs.append(df_sheet)
+    except Exception as e:
+        print(f"Error cargando Mayo: {e}")
+        pass
+
+    if all_dfs:
+        df_mayo = pd.concat(all_dfs, ignore_index=True)
+        if 'ESTADO' in df_mayo.columns and 'ESTADO LIMPIO' not in df_mayo.columns:
+            df_mayo = df_mayo.rename(columns={'ESTADO': 'ESTADO LIMPIO'})
+            
+        estado_mapping = {
+            'EVALUACIÓN BCP': 'EN EVALUACION BCP',
+            'EVALUACION BCP': 'EN EVALUACION BCP',
+            'PENDIENTE DE BACKOFFICE': 'PENDIENTE DE BACK OFFICE',
+            'PENDIENTE DE BACK': 'PENDIENTE DE BACK OFFICE',
+            'OBS BACKOFFICE': 'OBSERVADO BACK',
+            'OBS BCP': 'OBSERVADO FFVV',
+            'RECHAZADO': 'RECHAZADA',
+            'APROBADA': 'APROBADA',
+            'DESEMBOLSADO': 'DESEMBOLSADO',
+            'PENDIENTE DE DOCUMENTAR': 'PENDIENTE DE DOCUMENTAR',
+            'PENDIENTE DE REMESA': 'PENDIENTE DE REMESA'
+        }
+        if 'ESTADO LIMPIO' in df_mayo.columns:
+            df_mayo['ESTADO LIMPIO'] = df_mayo['ESTADO LIMPIO'].astype(str).str.strip().str.upper()
+            df_mayo['ESTADO LIMPIO'] = df_mayo['ESTADO LIMPIO'].map(lambda x: estado_mapping.get(x, x))
+            
+        df_mayo['MES'] = 'MAYO'
+        df = pd.concat([df_abril, df_mayo], ignore_index=True)
+    else:
+        df = df_abril
+
+    # --- LIMPIEZA UNIFICADA ---
     if 'MAF NETO' in df.columns:
         df['MAF NETO'] = df['MAF NETO'].fillna("0")
-        df['MAF NETO_Num'] = df['MAF NETO'].str.replace('S/', '', regex=False).str.strip()
+        df['MAF NETO_Num'] = df['MAF NETO'].astype(str).str.replace('S/', '', regex=False).str.strip()
         df['MAF NETO_Num'] = df['MAF NETO_Num'].str.replace('.', '', regex=False)
         df['MAF NETO_Num'] = df['MAF NETO_Num'].str.replace(',', '.', regex=False)
         df['MAF NETO_Num'] = pd.to_numeric(df['MAF NETO_Num'], errors='coerce').fillna(0)
     df['SUPERVISOR'] = df['SUPERVISOR'].fillna('SIN SUPERVISOR')
-    df['PLAZA DE VENTA'] = df['PLAZA DE VENTA'].fillna('SIN PLAZA').str.strip()
-    df['ESTADO LIMPIO'] = df['ESTADO LIMPIO'].fillna('SIN ESTADO')
-    df['CONVENIO'] = df['CONVENIO'].fillna('SIN CONVENIO').str.strip().str.upper()
-    df['EJECUTIVO'] = df['EJECUTIVO'].fillna('SIN ASIGNAR').str.strip().str.upper()
+    if 'PLAZA DE VENTA' in df.columns:
+        df['PLAZA DE VENTA'] = df['PLAZA DE VENTA'].fillna('SIN PLAZA').astype(str).str.strip()
+    if 'ESTADO LIMPIO' in df.columns:
+        df['ESTADO LIMPIO'] = df['ESTADO LIMPIO'].fillna('SIN ESTADO').astype(str).str.strip().str.upper()
+    if 'CONVENIO' in df.columns:
+        df['CONVENIO'] = df['CONVENIO'].fillna('SIN CONVENIO').astype(str).str.strip().str.upper()
+    if 'EJECUTIVO' in df.columns:
+        df['EJECUTIVO'] = df['EJECUTIVO'].fillna('SIN ASIGNAR').astype(str).str.strip().str.upper()
+    
     df['ZONA_SUP'] = df['SUPERVISOR'].map(ZONAS_MAP).fillna('N/A')
     df['REGION'] = df['ZONA_SUP'].apply(lambda z: 'LIMA' if z == 'LIMA' else ('NORTE' if z in NORTE else 'OTROS'))
+    
     return df
 
 with st.spinner('Conectando...'):
@@ -206,6 +270,9 @@ with st.sidebar:
     st.markdown(f'<div style="text-align:center;padding:12px 0 8px 0;">{logo_html}</div>', unsafe_allow_html=True)
     st.markdown("---")
     st.markdown("**Filtros**")
+    mes_opts = sorted(df['MES'].dropna().unique().tolist())
+    selected_mes = st.multiselect("Mes", mes_opts, default=mes_opts)
+    
     region_opts = ['LIMA', 'NORTE', 'OTROS']
     selected_region = st.multiselect("Plaza", region_opts, default=region_opts)
     supervisor_list = sorted(df[df['REGION'].isin(selected_region)]['SUPERVISOR'].unique().tolist())
@@ -216,6 +283,7 @@ with st.sidebar:
     selected_ejecutivo = st.multiselect("Ejecutivo", ejecutivo_list, default=ejecutivo_list)
 
 filtered_df = df[
+    (df['MES'].isin(selected_mes)) &
     (df['REGION'].isin(selected_region)) &
     (df['SUPERVISOR'].isin(selected_supervisor)) &
     (df['CONVENIO'].isin(selected_convenio)) &
