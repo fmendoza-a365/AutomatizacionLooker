@@ -557,7 +557,8 @@ def build_matrix(data, group_col):
     res.loc['TOTAL'] = tot
     return res.reset_index()
 
-m_df = df[df['SUPERVISOR'].isin(selected_supervisor) & df['CONVENIO'].isin(selected_convenio) & df['REGION'].isin(selected_region)]
+# Usamos filtered_df que ya tiene el filtro de mes aplicado desde arriba
+m_df = filtered_df
 df_super = build_matrix(m_df, 'SUPERVISOR')
 
 def build_plaza_matrix(data):
