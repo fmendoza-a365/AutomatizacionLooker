@@ -289,7 +289,7 @@ def load_data():
         df['MAF NETO_Num'] = df['MAF NETO_Num'].str.replace('.', '', regex=False)
         df['MAF NETO_Num'] = df['MAF NETO_Num'].str.replace(',', '.', regex=False)
         df['MAF NETO_Num'] = pd.to_numeric(df['MAF NETO_Num'], errors='coerce').fillna(0)
-    df['SUPERVISOR'] = df['SUPERVISOR'].fillna('SIN SUPERVISOR')
+    df['SUPERVISOR'] = df['SUPERVISOR'].fillna('SIN SUPERVISOR').astype(str).str.strip().str.upper()
     if 'PLAZA DE VENTA' in df.columns:
         df['PLAZA DE VENTA'] = df['PLAZA DE VENTA'].fillna('SIN PLAZA').astype(str).str.strip()
     if 'ESTADO LIMPIO' in df.columns:
@@ -551,13 +551,38 @@ st.markdown("""<div class="section-header">
 </div>""", unsafe_allow_html=True)
 
 def build_matrix(data, group_col, meses_activos):
-    if data.empty: return pd.DataFrame()
-    ps = data.pivot_table(index=group_col, columns='ESTADO LIMPIO', values='MAF NETO_Num', aggfunc='sum', fill_value=0)
-    pc = data.pivot_table(index=group_col, columns='ESTADO LIMPIO', values='MAF NETO_Num', aggfunc='count', fill_value=0)
-    res = pd.DataFrame(index=ps.index)
-    if group_col == 'SUPERVISOR':
-        res['ZONA'] = [ZONAS_MAP.get(s, 'N/A') for s in res.index]
     g = lambda p, c: p[c] if c in p.columns else 0
+
+    if group_col == 'SUPERVISOR':
+        # Supervisores con meta asignada en los meses activos
+        sups_con_meta = sorted(
+            s for mes in meses_activos
+            for s in MESES_CONFIG.get(mes, {}).get('metas', {})
+            if s != 'WINNIE'
+        )
+        # Supervisores que tienen datos reales (normalizados a mayúsculas)
+        data = data.copy()
+        if not data.empty:
+            data[group_col] = data[group_col].str.upper().str.strip()
+        sups_en_datos = list(data[group_col].unique()) if not data.empty else []
+        full_index = sorted(set(sups_con_meta) | set(sups_en_datos))
+
+        if not data.empty:
+            ps = data.pivot_table(index=group_col, columns='ESTADO LIMPIO', values='MAF NETO_Num', aggfunc='sum', fill_value=0)
+            pc = data.pivot_table(index=group_col, columns='ESTADO LIMPIO', values='MAF NETO_Num', aggfunc='count', fill_value=0)
+        else:
+            ps = pd.DataFrame(index=pd.Index([], name=group_col))
+            pc = pd.DataFrame(index=pd.Index([], name=group_col))
+        ps = ps.reindex(full_index, fill_value=0)
+        pc = pc.reindex(full_index, fill_value=0)
+        res = pd.DataFrame(index=ps.index)
+        res['ZONA'] = [ZONAS_MAP.get(s, 'N/A') for s in res.index]
+    else:
+        if data.empty: return pd.DataFrame()
+        ps = data.pivot_table(index=group_col, columns='ESTADO LIMPIO', values='MAF NETO_Num', aggfunc='sum', fill_value=0)
+        pc = data.pivot_table(index=group_col, columns='ESTADO LIMPIO', values='MAF NETO_Num', aggfunc='count', fill_value=0)
+        res = pd.DataFrame(index=ps.index)
+
     res['TOTAL DESEMBOLSO'] = g(ps, 'DESEMBOLSADO')
     res['Q DESEMBOLSO'] = g(pc, 'DESEMBOLSADO')
     res['APROBADA'] = g(ps, 'APROBADA')
@@ -569,12 +594,11 @@ def build_matrix(data, group_col, meses_activos):
     if group_col == 'SUPERVISOR':
         res['META OBJETIVO'] = [get_meta_supervisor(s, meses_activos) for s in res.index]
     else:
-        # Acumular metas por región sumando todos los meses activos
         plazas_metas = {'LIMA': 0, 'NORTE': 0, 'OTROS': 0}
         for mes in meses_activos:
             for sup, meta in MESES_CONFIG.get(mes, {}).get('metas', {}).items():
                 if sup == 'WINNIE':
-                    continue  # alias, evitar doble conteo
+                    continue
                 zona = ZONAS_MAP.get(sup, 'OTROS')
                 region = 'LIMA' if zona == 'LIMA' else ('NORTE' if zona in NORTE else 'OTROS')
                 plazas_metas[region] += meta
