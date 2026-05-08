@@ -305,9 +305,16 @@ def load_data():
     elif 'DOCUMENTO' in df.columns and 'DNI' in df.columns:
         df['DNI'] = df['DNI'].fillna(df['DOCUMENTO'])
         df = df.drop(columns=['DOCUMENTO'])
-    # ESTADO (raw) es redundante si ya existe ESTADO LIMPIO (normalizado y mapeado)
-    if 'ESTADO' in df.columns and 'ESTADO LIMPIO' in df.columns:
-        df = df.drop(columns=['ESTADO'])
+    # --- Normalizar ESTADO → ESTADO LIMPIO (aplica a cualquier mes) ---
+    if 'ESTADO' in df.columns:
+        df['ESTADO'] = df['ESTADO'].astype(str).str.strip().str.upper()
+        df['ESTADO'] = df['ESTADO'].map(lambda x: ESTADO_MAPPING.get(x, x))
+        if 'ESTADO LIMPIO' not in df.columns:
+            df = df.rename(columns={'ESTADO': 'ESTADO LIMPIO'})
+        else:
+            # Si ambas existen: llenar huecos en ESTADO LIMPIO con ESTADO normalizado
+            df['ESTADO LIMPIO'] = df['ESTADO LIMPIO'].fillna(df['ESTADO'])
+            df = df.drop(columns=['ESTADO'])
 
     df['ZONA_SUP'] = df['SUPERVISOR'].map(ZONAS_MAP).fillna('N/A')
     df['REGION'] = df['ZONA_SUP'].apply(lambda z: 'LIMA' if z == 'LIMA' else ('NORTE' if z in NORTE else 'OTROS'))
