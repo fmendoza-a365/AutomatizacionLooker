@@ -22,24 +22,57 @@ def create_download_link(df, filename, label):
 # --- CONSTANTES ---
 ZONAS_MAP = {
     'NAHOMI DIAZ': 'CHICLAYO', 'JORGE RAMIREZ': 'CHICLAYO', 'JHON ZAMORA': 'CHICLAYO',
+    'CRISTINA BRACAMONTE': 'CHICLAYO',                                          # MAYO - Nuevo
     'MILAGROS TUESTA': 'LIMA', 'KENNY MORALES': 'LIMA', 'ANGIE SILVERA': 'LIMA', 'MARIELLA PAÑAHUA': 'LIMA',
-    'LUIS CHUSE': 'LIMA', 'LUIS SHEPHERD': 'LIMA', 'LUIS MENDOZA': 'LIMA',
+    'LUIS CHUSE': 'LIMA', 'LUIS SHEPHERD': 'LIMA', 'LUIS MENDOZA': 'LIMA', 'PERCY ADRIANZEN': 'LIMA',  # MAYO - Nuevo
     'JIMMY COLLAZOS': 'TARAPOTO', 'JULIA OBLITAS': 'TRUJILLO',
+    'VIOLETA LLERENA': 'AREQUIPA',                                              # MAYO - Nuevo (→ OTROS)
     'WINNIE': 'LIMA'
 }
 NORTE = ['CHICLAYO', 'PIURA', 'TRUJILLO']
 
-# --- METAS DINÁMICAS ---
-METAS_BASE = {
-    'ANGIE SILVERA': 1000000, 'NAHOMI DIAZ': 1000000, 'MILAGROS TUESTA': 1000000,
-    'JHON ZAMORA': 1000000, 'MARIELLA PAÑAHUA': 650000, 'JIMMY COLLAZOS': 650000,
-    'KENNY MORALES': 650000, 'LUIS CHUSE': 1000000, 'JULIA OBLITAS': 1000000,
-    'JORGE RAMIREZ': 1000000, 'LUIS SHEPHERD': 500000, 'LUIS MENDOZA': 500000
+# --- CONFIGURACIÓN POR MES (URL + Formato + Metas) ---
+MESES_CONFIG = {
+    'ABRIL': {
+        'url': 'https://docs.google.com/spreadsheets/d/16PzK230jtrjkpHYq5mYSFrdeXk-0B6N7/export?format=csv&gid=305780908',
+        'format': 'csv',
+        'metas': {
+            'ANGIE SILVERA': 1_000_000, 'NAHOMI DIAZ': 1_000_000, 'MILAGROS TUESTA': 1_000_000,
+            'JHON ZAMORA': 1_000_000, 'MARIELLA PAÑAHUA': 650_000, 'JIMMY COLLAZOS': 650_000,
+            'KENNY MORALES': 650_000, 'LUIS CHUSE': 1_000_000, 'JULIA OBLITAS': 1_000_000,
+            'JORGE RAMIREZ': 1_000_000, 'LUIS SHEPHERD': 500_000, 'LUIS MENDOZA': 500_000,
+            'WINNIE': 1_000_000,  # alias de MILAGROS TUESTA
+        }
+    },
+    'MAYO': {
+        'url': 'https://docs.google.com/spreadsheets/d/1zJONhh_3kih4HZUNvi3DC4Ybou84U-SUsiaOdbwEVJw/export?format=xlsx',
+        'format': 'excel_multisheet',
+        'metas': {
+            'CRISTINA BRACAMONTE': 1_000_000, 'JHON ZAMORA': 1_000_000, 'JORGE RAMIREZ': 1_000_000,
+            'ANGIE SILVERA': 2_500_000, 'LUIS CHUSE': 1_500_000, 'LUIS MENDOZA': 1_000_000,
+            'JIMMY COLLAZOS': 1_000_000, 'KENNY MORALES': 1_000_000, 'MILAGROS TUESTA': 1_500_000,
+            'MARIELLA PAÑAHUA': 1_000_000, 'PERCY ADRIANZEN': 1_000_000,
+            'NAHOMI DIAZ': 1_000_000, 'VIOLETA LLERENA': 1_000_000,
+            'WINNIE': 1_500_000,  # alias de MILAGROS TUESTA
+        }
+    },
+    # Para agregar JUNIO: copiar este bloque, completar url y metas.
+    # 'JUNIO': { 'url': '...', 'format': 'csv', 'metas': { ... } }
 }
 
-# Creamos el diccionario final incluyendo alias sin duplicar para el cálculo global
-METAS_SUPERVISORES = {**METAS_BASE, 'WINNIE': METAS_BASE['MILAGROS TUESTA']}
-META_GLOBAL = sum(METAS_BASE.values())
+def get_meta_supervisor(supervisor, meses_activos):
+    """Meta acumulada de un supervisor para los meses seleccionados."""
+    key = str(supervisor).upper().strip()
+    return sum(MESES_CONFIG.get(m, {}).get('metas', {}).get(key, 0) for m in meses_activos)
+
+def get_metas_supervisores(supervisores, meses_activos):
+    """Meta total acumulada para una lista de supervisores y meses seleccionados."""
+    total = sum(get_meta_supervisor(s, meses_activos) for s in supervisores)
+    if total == 0:
+        total = sum(sum(cfg['metas'].values()) for cfg in MESES_CONFIG.values())
+    return total
+
+
 
 ESTADO_COLORS = {
     'POR INGRESAR': '#2B7DE9', 'EN EVALUACION BCP': '#E6A817', 'APROBADA': '#2D9A3F',
@@ -180,21 +213,24 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # --- DATA ---
-@st.cache_data(ttl=60)
-def load_data():
-    # --- ABRIL ---
-    url_abril = "https://docs.google.com/spreadsheets/d/16PzK230jtrjkpHYq5mYSFrdeXk-0B6N7/export?format=csv&gid=305780908"
-    df_abril = pd.read_csv(url_abril)
-    df_abril['MES'] = 'ABRIL'
-    
-    # --- MAYO ---
-    url_mayo = "https://docs.google.com/spreadsheets/d/1zJONhh_3kih4HZUNvi3DC4Ybou84U-SUsiaOdbwEVJw/export?format=xlsx"
+ESTADO_MAPPING = {
+    'EVALUACIÓN BCP': 'EN EVALUACION BCP', 'EVALUACION BCP': 'EN EVALUACION BCP',
+    'PENDIENTE DE BACKOFFICE': 'PENDIENTE DE BACK OFFICE', 'PENDIENTE DE BACK': 'PENDIENTE DE BACK OFFICE',
+    'OBS BACKOFFICE': 'OBSERVADO BACK', 'OBS BCP': 'OBSERVADO FFVV',
+    'RECHAZADO': 'RECHAZADA', 'APROBADA': 'APROBADA', 'DESEMBOLSADO': 'DESEMBOLSADO',
+    'PENDIENTE DE DOCUMENTAR': 'PENDIENTE DE DOCUMENTAR', 'PENDIENTE DE REMESA': 'PENDIENTE DE REMESA'
+}
+
+def _load_excel_multisheet(url):
+    """Carga un Excel multi-hoja donde cada hoja es un supervisor. Reutilizable para cualquier mes."""
     all_dfs = []
+    sheet_names = []
     try:
-        res = requests.get(url_mayo)
+        res = requests.get(url)
         if res.status_code == 200:
             xls = pd.ExcelFile(BytesIO(res.content))
-            for sheet in xls.sheet_names:
+            sheet_names = xls.sheet_names
+            for sheet in sheet_names:
                 df_raw = pd.read_excel(xls, sheet_name=sheet, header=None)
                 header_idx = -1
                 for idx, row in df_raw.iterrows():
@@ -210,41 +246,41 @@ def load_data():
                         df_sheet['SUPERVISOR'] = sheet
                         all_dfs.append(df_sheet)
     except Exception as e:
-        st.error(f"Error técnico cargando Mayo: {e}")
-        pass
+        st.error(f"Error técnico cargando Excel: {e}")
+    df_result = pd.concat(all_dfs, ignore_index=True) if all_dfs else pd.DataFrame()
+    # Normalizar columna ESTADO
+    if not df_result.empty:
+        if 'ESTADO' in df_result.columns and 'ESTADO LIMPIO' not in df_result.columns:
+            df_result = df_result.rename(columns={'ESTADO': 'ESTADO LIMPIO'})
+        if 'ESTADO LIMPIO' in df_result.columns:
+            df_result['ESTADO LIMPIO'] = df_result['ESTADO LIMPIO'].astype(str).str.strip().str.upper()
+            df_result['ESTADO LIMPIO'] = df_result['ESTADO LIMPIO'].map(lambda x: ESTADO_MAPPING.get(x, x))
+    return df_result, sheet_names
 
-    # Guardar info de diagnóstico para el usuario
-    st.session_state['debug_mayo'] = {
-        'sheets_procesadas': xls.sheet_names if 'xls' in locals() else [],
-        'mayo_cargado': len(all_dfs) > 0
-    }
-
-    if all_dfs:
-        df_mayo = pd.concat(all_dfs, ignore_index=True)
-        if 'ESTADO' in df_mayo.columns and 'ESTADO LIMPIO' not in df_mayo.columns:
-            df_mayo = df_mayo.rename(columns={'ESTADO': 'ESTADO LIMPIO'})
-            
-        estado_mapping = {
-            'EVALUACIÓN BCP': 'EN EVALUACION BCP',
-            'EVALUACION BCP': 'EN EVALUACION BCP',
-            'PENDIENTE DE BACKOFFICE': 'PENDIENTE DE BACK OFFICE',
-            'PENDIENTE DE BACK': 'PENDIENTE DE BACK OFFICE',
-            'OBS BACKOFFICE': 'OBSERVADO BACK',
-            'OBS BCP': 'OBSERVADO FFVV',
-            'RECHAZADO': 'RECHAZADA',
-            'APROBADA': 'APROBADA',
-            'DESEMBOLSADO': 'DESEMBOLSADO',
-            'PENDIENTE DE DOCUMENTAR': 'PENDIENTE DE DOCUMENTAR',
-            'PENDIENTE DE REMESA': 'PENDIENTE DE REMESA'
-        }
-        if 'ESTADO LIMPIO' in df_mayo.columns:
-            df_mayo['ESTADO LIMPIO'] = df_mayo['ESTADO LIMPIO'].astype(str).str.strip().str.upper()
-            df_mayo['ESTADO LIMPIO'] = df_mayo['ESTADO LIMPIO'].map(lambda x: estado_mapping.get(x, x))
-            
-        df_mayo['MES'] = 'MAYO'
-        df = pd.concat([df_abril, df_mayo], ignore_index=True)
-    else:
-        df = df_abril
+@st.cache_data(ttl=60)
+def load_data():
+    all_monthly = []
+    debug_info = {}
+    for mes, config in MESES_CONFIG.items():
+        try:
+            if config['format'] == 'csv':
+                df_mes = pd.read_csv(config['url'])
+                debug_info[mes] = {'cargado': not df_mes.empty, 'registros': len(df_mes)}
+            elif config['format'] == 'excel_multisheet':
+                df_mes, sheets = _load_excel_multisheet(config['url'])
+                debug_info[mes] = {'cargado': not df_mes.empty, 'registros': len(df_mes), 'hojas': sheets}
+            else:
+                continue
+            if not df_mes.empty:
+                df_mes['MES'] = mes
+                all_monthly.append(df_mes)
+        except Exception as e:
+            st.error(f"Error cargando {mes}: {e}")
+            debug_info[mes] = {'cargado': False, 'registros': 0}
+    st.session_state['debug_meses'] = debug_info
+    if not all_monthly:
+        return pd.DataFrame()
+    df = pd.concat(all_monthly, ignore_index=True)
 
     # --- LIMPIEZA UNIFICADA ---
     if 'MAF NETO' in df.columns:
@@ -262,25 +298,27 @@ def load_data():
         df['CONVENIO'] = df['CONVENIO'].fillna('SIN CONVENIO').astype(str).str.strip().str.upper()
     if 'EJECUTIVO' in df.columns:
         df['EJECUTIVO'] = df['EJECUTIVO'].fillna('SIN ASIGNAR').astype(str).str.strip().str.upper()
-    
     df['ZONA_SUP'] = df['SUPERVISOR'].map(ZONAS_MAP).fillna('N/A')
     df['REGION'] = df['ZONA_SUP'].apply(lambda z: 'LIMA' if z == 'LIMA' else ('NORTE' if z in NORTE else 'OTROS'))
-    
     return df
 
 with st.spinner('Conectando...'):
     df = load_data()
 
-# --- DIAGNÓSTICO DE DATOS (Solo si Mayo falla) ---
-if not st.session_state.get('debug_mayo', {}).get('mayo_cargado', False):
-    with st.expander("⚠️ Aviso: No se detectaron datos de Mayo", expanded=False):
-        st.warning("No se encontraron registros válidos en el archivo de Mayo.")
-        st.info(f"Hojas encontradas: {', '.join(st.session_state.get('debug_mayo', {}).get('sheets_procesadas', []))}")
+# --- DIAGNÓSTICO DE DATOS ---
+debug_meses = st.session_state.get('debug_meses', {})
+meses_fallidos = [m for m, info in debug_meses.items() if not info.get('cargado', False)]
+if meses_fallidos:
+    with st.expander(f"⚠️ Aviso: No se detectaron datos de {', '.join(meses_fallidos)}", expanded=False):
+        for mes in meses_fallidos:
+            info = debug_meses[mes]
+            st.warning(f"No se encontraron registros válidos en {mes}.")
+            if 'hojas' in info:
+                st.info(f"Hojas encontradas: {', '.join(info['hojas'])}")
         st.markdown("""
         **Posibles causas:**
         1. Ninguna hoja tiene una columna llamada exactamente **'PLAZA DE VENTA'**.
-        2. Las hojas están vacías.
-        3. El archivo no es accesible actualmente.
+        2. Las hojas están vacías o el archivo no es accesible.
         """)
 
 # --- FILTROS GLOBALES SUPERIORES ---
@@ -322,10 +360,9 @@ filtered_df = df[
 
 # --- KPIs ---
 desembolsado_df = filtered_df[filtered_df['ESTADO LIMPIO'] == 'DESEMBOLSADO']
-# --- CALCULO META DINÁMICA ---
-meta_actual = sum(METAS_SUPERVISORES.get(str(sup).upper().strip(), 0) for sup in selected_supervisor)
-# Si no hay selección o la suma es 0, usamos la global para evitar errores
-if meta_actual == 0: meta_actual = META_GLOBAL
+# --- CALCULO META DINÁMICA (por mes y supervisores seleccionados) ---
+meta_actual = get_metas_supervisores(selected_supervisor, selected_mes)
+
 
 monto_desembolso = desembolsado_df['MAF NETO_Num'].sum()
 q_desembolso = len(desembolsado_df)
@@ -513,7 +550,7 @@ st.markdown("""<div class="section-header">
     <span class="section-label">Tablas de Gestión</span>
 </div>""", unsafe_allow_html=True)
 
-def build_matrix(data, group_col):
+def build_matrix(data, group_col, meses_activos):
     if data.empty: return pd.DataFrame()
     ps = data.pivot_table(index=group_col, columns='ESTADO LIMPIO', values='MAF NETO_Num', aggfunc='sum', fill_value=0)
     pc = data.pivot_table(index=group_col, columns='ESTADO LIMPIO', values='MAF NETO_Num', aggfunc='count', fill_value=0)
@@ -528,25 +565,20 @@ def build_matrix(data, group_col):
     res['EVALUACION BCP'] = g(ps, 'EN EVALUACION BCP')
     res['PENDIENTE DE BACK'] = g(ps, 'PENDIENTE DE BACK OFFICE')
     res['PENDIENTE DE REMESA'] = g(ps, 'PENDIENTE DE REMESA')
-    # Lógica de Metas Dinámicas (LIMA, NORTE, OTROS)
+    # --- Metas Dinámicas por mes seleccionado ---
     if group_col == 'SUPERVISOR':
-        # Normalizamos el índice para asegurar el match con el diccionario
-        res['META OBJETIVO'] = [METAS_SUPERVISORES.get(str(s).upper().strip(), 1000000) for s in res.index]
+        res['META OBJETIVO'] = [get_meta_supervisor(s, meses_activos) for s in res.index]
     else:
-        # Mapeo de Zonas a Plazas Mayores
+        # Acumular metas por región sumando todos los meses activos
         plazas_metas = {'LIMA': 0, 'NORTE': 0, 'OTROS': 0}
-        for sup, meta in METAS_BASE.items():
-            zona = ZONAS_MAP.get(sup, 'OTROS')
-            if zona == 'LIMA':
-                plazas_metas['LIMA'] += meta
-            elif zona in NORTE:
-                plazas_metas['NORTE'] += meta
-            else:
-                plazas_metas['OTROS'] += meta
-        
-        # Asignar la meta según el grupo (REGION o ZONA corregida)
-        res['META OBJETIVO'] = [plazas_metas.get(p, 1000000) for p in res.index]
-        
+        for mes in meses_activos:
+            for sup, meta in MESES_CONFIG.get(mes, {}).get('metas', {}).items():
+                if sup == 'WINNIE':
+                    continue  # alias, evitar doble conteo
+                zona = ZONAS_MAP.get(sup, 'OTROS')
+                region = 'LIMA' if zona == 'LIMA' else ('NORTE' if zona in NORTE else 'OTROS')
+                plazas_metas[region] += meta
+        res['META OBJETIVO'] = [plazas_metas.get(p, 0) for p in res.index]
     res['AVANCE'] = (res['TOTAL DESEMBOLSO'] / res['META OBJETIVO'] * 100).fillna(0)
     res['Q POR INGRESAR'] = g(pc, 'POR INGRESAR')
     res['Q EVALUACION BCP'] = g(pc, 'EN EVALUACION BCP')
@@ -559,15 +591,16 @@ def build_matrix(data, group_col):
 
 # Usamos filtered_df que ya tiene el filtro de mes aplicado desde arriba
 m_df = filtered_df
-df_super = build_matrix(m_df, 'SUPERVISOR')
+df_super = build_matrix(m_df, 'SUPERVISOR', selected_mes)
 
-def build_plaza_matrix(data):
+def build_plaza_matrix(data, meses_activos):
     if data.empty: return pd.DataFrame()
     data = data.copy()
     data['PLAZA'] = data['REGION']
-    return build_matrix(data, 'PLAZA')
+    return build_matrix(data, 'PLAZA', meses_activos)
 
-df_plaza = build_plaza_matrix(m_df)
+df_plaza = build_plaza_matrix(m_df, selected_mes)
+
 
 cc = {
     "TOTAL DESEMBOLSO": st.column_config.NumberColumn("Total Desembolso", format="S/ %,.0f"),
