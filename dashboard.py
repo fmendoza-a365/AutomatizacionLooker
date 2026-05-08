@@ -360,8 +360,17 @@ filtered_df = df[
 
 # --- KPIs ---
 desembolsado_df = filtered_df[filtered_df['ESTADO LIMPIO'] == 'DESEMBOLSADO']
-# --- CALCULO META DINÁMICA (por mes y supervisores seleccionados) ---
-meta_actual = get_metas_supervisores(selected_supervisor, selected_mes)
+
+# --- CALCULO META DINÁMICA ---
+# Base: suma directa desde MESES_CONFIG para los meses activos (incluye sups sin datos aún)
+meta_base = sum(
+    sum(v for k, v in MESES_CONFIG.get(m, {}).get('metas', {}).items() if k != 'WINNIE')
+    for m in selected_mes
+)
+# Restar solo lo que el usuario deseleccionó explícitamente en el sidebar
+sups_deseleccionados = (set(supervisor_list) - set(selected_supervisor)) - {'WINNIE'}
+meta_excluida = get_metas_supervisores(sups_deseleccionados, selected_mes)
+meta_actual = max(meta_base - meta_excluida, 0) or meta_base
 
 
 monto_desembolso = desembolsado_df['MAF NETO_Num'].sum()
