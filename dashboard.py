@@ -305,6 +305,10 @@ def load_data():
     elif 'DOCUMENTO' in df.columns and 'DNI' in df.columns:
         df['DNI'] = df['DNI'].fillna(df['DOCUMENTO'])
         df = df.drop(columns=['DOCUMENTO'])
+    # ESTADO (raw) es redundante si ya existe ESTADO LIMPIO (normalizado y mapeado)
+    if 'ESTADO' in df.columns and 'ESTADO LIMPIO' in df.columns:
+        df = df.drop(columns=['ESTADO'])
+
     df['ZONA_SUP'] = df['SUPERVISOR'].map(ZONAS_MAP).fillna('N/A')
     df['REGION'] = df['ZONA_SUP'].apply(lambda z: 'LIMA' if z == 'LIMA' else ('NORTE' if z in NORTE else 'OTROS'))
     return df
