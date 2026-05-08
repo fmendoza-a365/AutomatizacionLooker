@@ -298,6 +298,13 @@ def load_data():
         df['CONVENIO'] = df['CONVENIO'].fillna('SIN CONVENIO').astype(str).str.strip().str.upper()
     if 'EJECUTIVO' in df.columns:
         df['EJECUTIVO'] = df['EJECUTIVO'].fillna('SIN ASIGNAR').astype(str).str.strip().str.upper()
+    # --- Unificar columnas con nombres distintos entre meses ---
+    # DNI (Abril) == DOCUMENTO (Mayo) → consolidar en columna DNI
+    if 'DOCUMENTO' in df.columns and 'DNI' not in df.columns:
+        df = df.rename(columns={'DOCUMENTO': 'DNI'})
+    elif 'DOCUMENTO' in df.columns and 'DNI' in df.columns:
+        df['DNI'] = df['DNI'].fillna(df['DOCUMENTO'])
+        df = df.drop(columns=['DOCUMENTO'])
     df['ZONA_SUP'] = df['SUPERVISOR'].map(ZONAS_MAP).fillna('N/A')
     df['REGION'] = df['ZONA_SUP'].apply(lambda z: 'LIMA' if z == 'LIMA' else ('NORTE' if z in NORTE else 'OTROS'))
     return df
