@@ -209,14 +209,38 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # --- TOPBAR ---
-html_b64 = get_html_base64("bcp_convenios_banner_recontrafinal.html")
-href_html = f"data:text/html;base64,{html_b64}" if html_b64 else "#"
+def get_html_link():
+    import os
+    file_path = "bcp_convenios_banner_recontrafinal.html"
+    if os.path.exists(file_path):
+        with open(file_path, "rb") as f:
+            b64 = base64.b64encode(f.read()).decode()
+            return f"data:text/html;base64,{b64}"
+    return "#"
+
+href_html = get_html_link()
 
 st.markdown(f"""
 <div class="topbar">
     <div class="topbar-left">{logo_html}<span class="topbar-title">Centro de Operaciones</span></div>
     <div class="topbar-right">
-        <a href="{href_html}" target="_blank" class="export-button" style="margin:0 15px 0 0; padding: 5px 12px; background-color:#1A4FA0; color:white !important; border:none; height:28px;">
+        <a href="{href_html}" target="_blank" style="
+            text-decoration: none !important;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px 14px;
+            background-color: #1A4FA0;
+            color: #FFFFFF !important;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-right: 15px;
+            transition: all 0.3s ease;
+            border: 1px solid #1A4FA0;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        " onmouseover="this.style.backgroundColor='#E67212'; this.style.borderColor='#E67212'" onmouseout="this.style.backgroundColor='#1A4FA0'; this.style.borderColor='#1A4FA0'">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="white" style="margin-right:6px;"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
             Abrir Cotizador
         </a>
