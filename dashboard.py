@@ -19,6 +19,13 @@ def create_download_link(df, filename, label):
     icon_svg = """<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/></svg>"""
     return f'<a href="{href}" download="{filename}" class="export-button">{icon_svg}&nbsp;&nbsp;{label}</a>'
 
+def get_html_base64(file_path):
+    try:
+        with open(file_path, "rb") as f:
+            return base64.b64encode(f.read()).decode()
+    except:
+        return None
+
 # --- CONSTANTES ---
 ZONAS_MAP = {
     'NAHOMI DIAZ': 'CHICLAYO', 'JORGE RAMIREZ': 'CHICLAYO', 'JHON ZAMORA': 'CHICLAYO',
@@ -367,6 +374,20 @@ with st.sidebar:
     selected_convenio = st.multiselect("Convenio", convenio_list, default=convenio_list)
     ejecutivo_list = sorted(df[df['SUPERVISOR'].isin(selected_supervisor)]['EJECUTIVO'].unique().tolist())
     selected_ejecutivo = st.multiselect("Ejecutivo", ejecutivo_list, default=ejecutivo_list)
+
+    st.markdown("---")
+    st.markdown("**Herramientas Externas**")
+    html_b64 = get_html_base64("bcp_convenios_banner_recontrafinal.html")
+    if html_b64:
+        href_html = f"data:text/html;base64,{html_b64}"
+        st.markdown(f"""
+            <a href="{href_html}" target="_blank" style="text-decoration: none;">
+                <div class="export-button" style="width:100%; background-color:#1A4FA0; color:white !important; border:none;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="white" style="margin-right:8px;"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+                    Abrir Cotizador
+                </div>
+            </a>
+        """, unsafe_allow_html=True)
 
 filtered_df = df[
     (df['MES'].isin(selected_mes)) &
