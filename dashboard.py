@@ -4,8 +4,6 @@ import plotly.graph_objects as go
 import base64
 from io import BytesIO
 import requests
-import datetime
-from datetime import timedelta
 
 # --- HELPER EXCEL ---
 def to_excel(df):
@@ -61,29 +59,6 @@ MESES_CONFIG = {
     # Para agregar JUNIO: copiar este bloque, completar url y metas.
     # 'JUNIO': { 'url': '...', 'format': 'csv', 'metas': { ... } }
 }
-
-# --- FERIADOS PERÚ 2026 ---
-FERIADOS_2026 = [
-    "2026-01-01", "2026-04-02", "2026-04-03", "2026-05-01", "2026-06-07",
-    "2026-06-29", "2026-07-23", "2026-07-28", "2026-07-29", "2026-08-06",
-    "2026-08-30", "2026-10-08", "2026-11-01", "2026-12-08", "2026-12-09",
-    "2026-12-25"
-]
-
-def get_working_days_count(start_date, end_date):
-    """Cuenta días de Lunes a Sábado excluyendo feriados nacionales."""
-    if start_date > end_date:
-        return 0
-    count = 0
-    curr = start_date
-    while curr <= end_date:
-        # 6 es domingo en isoweekday() si empezamos lunes=1... 
-        # Pero isoweekday(): Lunes=1, ..., Sábado=6, Domingo=7
-        if curr.isoweekday() <= 6: # Lunes a Sábado
-            if curr.strftime("%Y-%m-%d") not in FERIADOS_2026:
-                count += 1
-        curr += timedelta(days=1)
-    return count
 
 def get_meta_supervisor(supervisor, meses_activos):
     """Meta acumulada de un supervisor para los meses seleccionados."""
@@ -343,10 +318,6 @@ def load_data():
 
     df['ZONA_SUP'] = df['SUPERVISOR'].map(ZONAS_MAP).fillna('N/A')
     df['REGION'] = df['ZONA_SUP'].apply(lambda z: 'LIMA' if z == 'LIMA' else ('NORTE' if z in NORTE else 'OTROS'))
-    
-    if 'FECHA DE DESEMBOLSO' in df.columns:
-        df['FECHA DE DESEMBOLSO'] = pd.to_datetime(df['FECHA DE DESEMBOLSO'], dayfirst=True, errors='coerce')
-    
     return df
 
 with st.spinner('Conectando...'):
@@ -426,47 +397,17 @@ avance = (monto_desembolso / meta_actual * 100) if meta_actual > 0 else 0
 cantidad_ops = len(filtered_df)
 ticket_prom = desembolsado_df['MAF NETO_Num'].mean() if q_desembolso > 0 else 0
 
-# --- CALCULO PROYECCIÓN ---
-hoy = datetime.date.today()
-mes_actual_nombre = "MAYO" # Podría ser dinámico, pero lo anclamos al mes de gestión actual
-es_mes_actual = mes_actual_nombre in selected_mes and len(selected_mes) == 1
-
-proyeccion_monto = 0
-avance_proyectado = 0
-mostrar_proyeccion = False
-
-if es_mes_actual and not desembolsado_df.empty:
-    fecha_max = desembolsado_df['FECHA DE DESEMBOLSO'].max().date()
-    # Si la fecha máxima es del mes actual, proyectamos
-    if fecha_max.month == 5 and fecha_max.year == 2026:
-        mostrar_proyeccion = True
-        primer_dia = datetime.date(2026, 5, 1)
-        ultimo_dia = datetime.date(2026, 5, 31)
-        
-        dias_pasados = get_working_days_count(primer_dia, fecha_max)
-        dias_totales = get_working_days_count(primer_dia, ultimo_dia)
-        
-        if dias_pasados > 0:
-            ritmo_diario = monto_desembolso / dias_pasados
-            proyeccion_monto = ritmo_diario * dias_totales
-            avance_proyectado = (proyeccion_monto / meta_actual * 100) if meta_actual > 0 else 0
-
 st.markdown(f"""
 <div class="kpi-row">
     <div class="kpi-card" role="status" aria-label="Desembolso total: S/ {monto_desembolso:,.0f}">
         <div class="kpi-label">Desembolso Total</div>
         <div class="kpi-value">S/ {monto_desembolso:,.0f}</div>
-        <div class="kpi-sub">{q_desembolso} operaciones</div>
+        <div class="kpi-sub">{q_desembolso} operaciones desembolsadas</div>
     </div>
     <div class="kpi-card" data-accent="true" role="status" aria-label="Avance vs meta: {avance:.1f} porciento">
         <div class="kpi-label">Avance vs Meta</div>
         <div class="kpi-value">{avance:.1f}%</div>
         <div class="kpi-sub">Meta: S/ {meta_actual:,.0f}</div>
-    </div>
-    <div class="kpi-card" style="border-left: 4px solid #E67212;">
-        <div class="kpi-label">Proyección al Cierre</div>
-        <div class="kpi-value">S/ {proyeccion_monto:,.0f}</div>
-        <div class="kpi-sub">Est. {avance_proyectado:.1f}% de la meta</div>
     </div>
     <div class="kpi-card" role="status" aria-label="Operaciones totales: {cantidad_ops}">
         <div class="kpi-label">Operaciones Totales</div>
@@ -476,7 +417,7 @@ st.markdown(f"""
     <div class="kpi-card" role="status" aria-label="Ticket promedio: S/ {ticket_prom:,.0f}">
         <div class="kpi-label">Ticket Promedio</div>
         <div class="kpi-value">S/ {ticket_prom:,.0f}</div>
-        <div class="kpi-sub">Por desembolso</div>
+        <div class="kpi-sub">Promedio por desembolso</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
