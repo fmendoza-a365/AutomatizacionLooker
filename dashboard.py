@@ -236,26 +236,17 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # --- TOPBAR ---
-def get_html_link():
-    import os
-    # Buscar en el directorio actual (raíz del proyecto)
-    file_name = "bcp_convenios_banner_recontrafinal.html"
-    if os.path.exists(file_name):
-        with open(file_name, "rb") as f:
-            b64 = base64.b64encode(f.read()).decode()
-            return f"data:text/html;base64,{b64}"
-    return None
-
-href_html = get_html_link()
+# URL estática servida desde la carpeta /static
+href_html = "static/bcp_convenios_banner_recontrafinal.html"
 
 st.markdown(f"""
 <div class="topbar">
     <div class="topbar-left">{logo_html}<span class="topbar-title">Centro de Operaciones</span></div>
     <div class="topbar-right">
-        {f'''<a href="{href_html}" target="_blank" download="Cotizacion_BCP.html" class="topbar-button">
+        <a href="{href_html}" target="_blank" class="topbar-button">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="white" style="margin-right:6px;"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
             Abrir Cotizador
-        </a>''' if href_html else '<span style="color:red; font-size:10px; margin-right:15px;">⚠️ Archivo no encontrado</span>'}
+        </a>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="#7B7B8A"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 11h-2V7h2zm0 4h-2v-2h2z"/></svg>
         Datos actualizados cada 1 min
     </div>
