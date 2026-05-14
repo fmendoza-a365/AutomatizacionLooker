@@ -202,16 +202,46 @@ st.markdown(f"""
         box-shadow: 0 4px 8px rgba(26, 79, 160, 0.2);
         transform: translateY(-1px);
     }}
-    .export-button svg {{
+    .export-button svg {
         margin-right: 8px;
-    }}
+    }
+    
+    /* Estilo para el botón de la cabecera */
+    .topbar-button {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 6px 14px !important;
+        background-color: #1A4FA0 !important;
+        color: #FFFFFF !important;
+        border-radius: 6px !important;
+        text-decoration: none !important;
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        margin-right: 15px !important;
+        transition: all 0.3s ease !important;
+        border: 1px solid #1A4FA0 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.3px !important;
+        line-height: 1 !important;
+    }
+    .topbar-button:hover {
+        background-color: #E67212 !important;
+        border-color: #E67212 !important;
+        color: #FFFFFF !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(230, 114, 18, 0.3) !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # --- TOPBAR ---
 def get_html_link():
     import os
-    file_path = "bcp_convenios_banner_recontrafinal.html"
+    # Intentar obtener la ruta absoluta del archivo
+    base_path = os.path.dirname(__file__)
+    file_path = os.path.join(base_path, "bcp_convenios_banner_recontrafinal.html")
+    
     if os.path.exists(file_path):
         with open(file_path, "rb") as f:
             b64 = base64.b64encode(f.read()).decode()
@@ -224,23 +254,7 @@ st.markdown(f"""
 <div class="topbar">
     <div class="topbar-left">{logo_html}<span class="topbar-title">Centro de Operaciones</span></div>
     <div class="topbar-right">
-        <a href="{href_html}" target="_blank" style="
-            text-decoration: none !important;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 6px 14px;
-            background-color: #1A4FA0;
-            color: #FFFFFF !important;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: 700;
-            margin-right: 15px;
-            transition: all 0.3s ease;
-            border: 1px solid #1A4FA0;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-        " onmouseover="this.style.backgroundColor='#E67212'; this.style.borderColor='#E67212'" onmouseout="this.style.backgroundColor='#1A4FA0'; this.style.borderColor='#1A4FA0'">
+        <a href="{href_html}" target="_blank" class="topbar-button">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="white" style="margin-right:6px;"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
             Abrir Cotizador
         </a>
