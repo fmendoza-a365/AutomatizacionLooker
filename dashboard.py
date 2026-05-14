@@ -209,10 +209,17 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # --- TOPBAR ---
+html_b64 = get_html_base64("bcp_convenios_banner_recontrafinal.html")
+href_html = f"data:text/html;base64,{html_b64}" if html_b64 else "#"
+
 st.markdown(f"""
 <div class="topbar">
     <div class="topbar-left">{logo_html}<span class="topbar-title">Centro de Operaciones</span></div>
     <div class="topbar-right">
+        <a href="{href_html}" target="_blank" class="export-button" style="margin:0 15px 0 0; padding: 5px 12px; background-color:#1A4FA0; color:white !important; border:none; height:28px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="white" style="margin-right:6px;"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+            Abrir Cotizador
+        </a>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="#7B7B8A"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 11h-2V7h2zm0 4h-2v-2h2z"/></svg>
         Datos actualizados cada 1 min
     </div>
@@ -374,20 +381,6 @@ with st.sidebar:
     selected_convenio = st.multiselect("Convenio", convenio_list, default=convenio_list)
     ejecutivo_list = sorted(df[df['SUPERVISOR'].isin(selected_supervisor)]['EJECUTIVO'].unique().tolist())
     selected_ejecutivo = st.multiselect("Ejecutivo", ejecutivo_list, default=ejecutivo_list)
-
-    st.markdown("---")
-    st.markdown("**Herramientas Externas**")
-    html_b64 = get_html_base64("bcp_convenios_banner_recontrafinal.html")
-    if html_b64:
-        href_html = f"data:text/html;base64,{html_b64}"
-        st.markdown(f"""
-            <a href="{href_html}" target="_blank" style="text-decoration: none;">
-                <div class="export-button" style="width:100%; background-color:#1A4FA0; color:white !important; border:none;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="white" style="margin-right:8px;"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
-                    Abrir Cotizador
-                </div>
-            </a>
-        """, unsafe_allow_html=True)
 
 filtered_df = df[
     (df['MES'].isin(selected_mes)) &
