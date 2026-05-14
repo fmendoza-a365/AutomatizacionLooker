@@ -20,7 +20,7 @@ if st.query_params.get("view") == "cotizador":
         </style>
     """, unsafe_allow_html=True)
     
-    file_path = "bcp_convenios_banner_recontrafinal.html"
+    file_path = "bcp_convenios_banner_pdf_imagen_8_inputs.html"
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             html_content = f.read()
