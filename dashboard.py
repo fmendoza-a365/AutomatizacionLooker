@@ -4,6 +4,30 @@ import plotly.graph_objects as go
 import base64
 from io import BytesIO
 import requests
+import json
+
+# --- CONFIGURACIÓN DE VISTA (COTIZADOR) ---
+# Si se accede vía ?view=cotizador, mostramos el HTML y detenemos el resto del dashboard
+if st.query_params.get("view") == "cotizador":
+    st.set_page_config(layout="wide", page_title="Cotizador BCP")
+    st.markdown("""
+        <style>
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+        header {visibility: hidden;}
+        .block-container {padding: 0;}
+        iframe {border: none;}
+        </style>
+    """, unsafe_allow_html=True)
+    
+    file_path = "bcp_convenios_banner_recontrafinal.html"
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            html_content = f.read()
+        st.components.v1.html(html_content, height=1200, scrolling=True)
+    except:
+        st.error("No se encontró el archivo de cotización.")
+    st.stop()
 
 # --- HELPER EXCEL ---
 def to_excel(df):
@@ -235,8 +259,8 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
-# URL de la página secundaria en Streamlit
-href_html = "/Cotizador"
+# URL de la página secundaria usando parámetros de consulta
+href_html = "/?view=cotizador"
 
 st.markdown(f"""
 <div class="topbar">
