@@ -202,12 +202,12 @@ st.markdown(f"""
         box-shadow: 0 4px 8px rgba(26, 79, 160, 0.2);
         transform: translateY(-1px);
     }}
-    .export-button svg {
+    .export-button svg {{
         margin-right: 8px;
-    }
+    }}
     
     /* Estilo para el botón de la cabecera */
-    .topbar-button {
+    .topbar-button {{
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
@@ -224,14 +224,14 @@ st.markdown(f"""
         text-transform: uppercase !important;
         letter-spacing: 0.3px !important;
         line-height: 1 !important;
-    }
-    .topbar-button:hover {
+    }}
+    .topbar-button:hover {{
         background-color: #E67212 !important;
         border-color: #E67212 !important;
         color: #FFFFFF !important;
         transform: translateY(-1px);
         box-shadow: 0 4px 8px rgba(230, 114, 18, 0.3) !important;
-    }
+    }}
 </style>
 """, unsafe_allow_html=True)
 
