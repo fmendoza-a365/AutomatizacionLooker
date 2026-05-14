@@ -235,9 +235,9 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
-# --- TOPBAR ---
 # URL estática servida desde la carpeta /static
-href_html = "static/bcp_convenios_banner_recontrafinal.html"
+# En Streamlit Cloud, la ruta absoluta debe empezar con /static/
+href_html = "/static/bcp_convenios_banner_recontrafinal.html"
 
 st.markdown(f"""
 <div class="topbar">
