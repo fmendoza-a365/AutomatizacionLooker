@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cotización Convenios BCP</title>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <style>
+    :root {
+      --bcp-blue: #00489b;
+      --bcp-orange: #ff7900;
+      --bcp-purple: #2616a8;
+      --line: #d7deee;
+      --text: #111827;
+      --muted: #7c879a;
+      --red: #d90000;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #e8edf5;
+      font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+    }
+
+    .toolbar {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 50;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .export-btn {
+      border: 0;
+      cursor: pointer;
+      padding: 12px 18px;
+      border-radius: 999px;
+      color: #fff;
+      background: linear-gradient(95deg, var(--bcp-blue), var(--bcp-orange));
+      font-family: "Segoe UI", Arial, sans-serif;
+      font-size: 14px;
+      font-weight: 800;
+      box-shadow: 0 12px 26px rgba(0, 43, 145, .22);
+    }
+
+    .export-btn:disabled {
+      opacity: .7;
+      cursor: wait;
+    }
+
+    .export-image-btn {
+      background: linear-gradient(95deg, var(--bcp-purple), var(--bcp-orange));
+    }
+
+    .screen {
+      position: relative;
+      width: 1200px;
+      height: 900px;
+      overflow: hidden;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 18% 17%, rgba(255,255,255,.96) 0 15%, transparent 36%),
+        radial-gradient(circle at 76% 70%, rgba(255,255,255,.82) 0 10%, transparent 34%),
+        linear-gradient(120deg, #f9fbfe 0%, #eef3fa 55%, #f7f9fd 100%);
+      box-shadow: 0 20px 70px rgba(0, 0, 0, 0.18);
+    }
+
+    .top-accent {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 8px;
+      background: linear-gradient(90deg, #00489b 0%, #023ba5 58%, #3625a8 82%, #ff7900 100%);
+      z-index: 1;
+    }
+
+    .logo-wrap {
+      position: absolute;
+      top: 55px;
+      left: 47px;
+      width: 165px;
+      height: 48px;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      overflow: visible;
+    }
+
+    .bcp-logo-svg {
+      width: 165px !important;
+      height: auto !important;
+      display: block;
+      overflow: visible;
+    }
+
+    .quote-header {
+      position: absolute;
+      top: 35px;
+      left: 382px;
+      width: 759px;
+      height: 110px;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 28px;
+      padding: 22px 34px;
+      border-radius: 24px;
+      overflow: hidden;
+      background: linear-gradient(100deg, #023ba5 0%, #00489b 45%, #2b27a8 76%, #ff7900 100%);
+      box-shadow: 0 16px 34px rgba(2, 59, 165, 0.22);
+      border: 1px solid rgba(255, 255, 255, .22);
+    }
+
+    .quote-header::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 10px;
+      height: 100%;
+      background: #ff7900;
+      pointer-events: none;
+    }
+
+    .quote-header::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,.14) 0%, rgba(255,255,255,0) 48%);
+      pointer-events: none;
+    }
+
+    .header-content {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      gap: 17px;
+      min-width: 0;
+    }
+
+    .header-icon {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      color: #fff;
+    }
+
+    .header-icon svg {
+      width: 33px;
+      height: 33px;
+      display: block;
+    }
+
+    .header-copy {
+      min-width: 0;
+    }
+
+    .header-copy small {
+      display: block;
+      margin-bottom: 7px;
+      color: rgba(255,255,255,.88);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 2.4px;
+      text-transform: uppercase;
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    .header-copy small::before {
+      content: none;
+    }
+
+    .header-copy h1 {
+      margin: 0;
+      color: #fff;
+      font-size: 25px;
+      font-weight: 800;
+      letter-spacing: -.35px;
+      line-height: 1.05;
+      text-transform: uppercase;
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    .header-copy p {
+      margin: 8px 0 0;
+      color: rgba(255,255,255,.88);
+      font-size: 13px;
+      line-height: 1.15;
+      font-weight: 600;
+      font-family: "Segoe UI", Arial, sans-serif;
+      white-space: nowrap;
+    }
+
+    .header-badge {
+      position: relative;
+      z-index: 2;
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      min-width: 136px;
+      height: 38px;
+      padding: 0 18px;
+      border-radius: 999px;
+      color: #fff;
+      background: rgba(255,255,255,.10);
+      border: 1px solid rgba(255,255,255,.42);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .9px;
+      text-transform: uppercase;
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    .card {
+      position: absolute;
+      top: 177px;
+      left: 57px;
+      width: 1084px;
+      height: 606px;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: 325px 1fr;
+      background: rgba(255, 255, 255, 0.58);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 10px 28px rgba(20, 42, 92, .06);
+    }
+
+    .labels {
+      display: grid;
+      grid-template-rows: repeat(9, 1fr);
+      background: linear-gradient(100deg, #00489b 0%, #00418d 58%, #003675 100%);
+    }
+
+    .label {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 0 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: .16px;
+      text-transform: uppercase;
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    .label:last-child,
+    .value:last-child {
+      border-bottom: 0;
+    }
+
+    .chev {
+      color: var(--bcp-orange);
+      font-size: 27px;
+      font-family: Arial, sans-serif;
+      font-weight: 700;
+      line-height: 1;
+      transform: translateY(-1px);
+      flex: 0 0 auto;
+    }
+
+    .values {
+      display: grid;
+      grid-template-rows: repeat(9, 1fr);
+      background: rgba(255, 255, 255, 0.42);
+    }
+
+    .value {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-bottom: 1px solid var(--line);
+      min-width: 0;
+      position: relative;
+    }
+
+    .field {
+      width: 94%;
+      height: 88%;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      text-align: center;
+      color: var(--text);
+      font-family: "Segoe UI", Arial, sans-serif;
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: .05px;
+      text-transform: uppercase;
+    }
+
+    .field.money,
+    .field.percent,
+    .field.date,
+    .field.number {
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .field.money.normal {
+      font-weight: 600;
+    }
+
+    .field.red {
+      color: var(--red);
+      font-weight: 800;
+    }
+
+    .field.month {
+      font-weight: 700;
+      text-transform: none;
+    }
+
+    .field::placeholder {
+      color: var(--muted);
+      font-weight: 500;
+      opacity: .78;
+      text-transform: none;
+    }
+
+    .field:focus {
+      background: rgba(255, 255, 255, 0.72);
+      box-shadow: inset 0 0 0 2px rgba(0, 42, 141, 0.10);
+      border-radius: 4px;
+    }
+
+    .export-text {
+      width: 94%;
+      height: 88%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: var(--text);
+      font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+      font-size: 17px;
+      font-weight: 600;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .export-text.placeholder {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 500;
+      text-transform: none;
+      opacity: .9;
+    }
+
+    .export-text.red {
+      color: var(--red);
+      font-weight: 800;
+    }
+
+    .export-text.month {
+      font-weight: 700;
+      text-transform: none;
+    }
+
+    .screen.exporting .field {
+      display: none;
+    }
+
+    .screen.exporting .export-text {
+      display: flex;
+    }
+
+    .commitment {
+      position: absolute;
+      left: 57px;
+      bottom: 30px;
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      z-index: 2;
+      color: #16448f;
+    }
+
+    .shield {
+      width: 39px;
+      height: 52px;
+    }
+
+    .tagline {
+      padding-left: 10px;
+      border-left: 2px solid var(--bcp-orange);
+      line-height: 1.08;
+      font-size: 16px;
+      font-style: italic;
+      font-weight: 700;
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    .tagline span {
+      display: block;
+      color: var(--bcp-orange);
+    }
+
+    .bottom-corner {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      width: 100px;
+      height: 99px;
+      background: var(--bcp-blue);
+      border-top-left-radius: 45px;
+      z-index: 2;
+      overflow: hidden;
+    }
+
+    .bottom-isotype {
+      position: absolute;
+      right: 20px;
+      bottom: 24px;
+      width: 29px;
+      height: 42px;
+      object-fit: contain;
+      display: block;
+    }
+
+    @media (max-width: 1220px) {
+      body {
+        place-items: start center;
+        background: #f7f9fd;
+      }
+
+      .screen {
+        transform-origin: top center;
+        transform: scale(calc(100vw / 1200));
+        box-shadow: none;
+      }
+
+      .toolbar {
+        top: 10px;
+        right: 10px;
+      }
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      .toolbar {
+        display: none !important;
+      }
+
+      .screen {
+        box-shadow: none;
+      }
+
+      .field:focus {
+        box-shadow: none;
+        background: transparent;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <button class="export-btn" data-export="pdf" type="button" onclick="exportPDF(this)">Exportar PDF</button>
+    <button class="export-btn export-image-btn" data-export="image" type="button" onclick="exportImage(this)">Exportar Imagen</button>
+  </div>
+
+  <main class="screen" id="cotizacion" aria-label="Cotización editable Convenios BCP">
+    <div class="top-accent" aria-hidden="true"></div>
+
+    <div class="logo-wrap" aria-label="BCP" role="img">
+      <svg class="bcp-logo-svg" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="0 0 1000 252" style="enable-background:new 0 0 1000 252;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill:#004192;}
+	.st1{fill:#F96A53;}
+</style>
+<g>
+	<path class="st0" d="M343.5,118.6c24.5,8.2,38.4,22.3,40.2,46.8c2,27.2-9.7,47.5-31.6,62.5c-12.6,8.8-26.9,14.1-41.9,16.8
+		c-28.5,5.3-57.2,5.5-85.6,0.9c-28.7-4.6-41.3-22.1-35.1-50.8c12.8-59.2,26.5-118.4,40-177.4c1.1-4.6,2.4-8.2,8.4-8.6
+		C270,6,302,1.1,334.4,6.6c11.9,2,23.4,4.9,34,10.2c36.6,18.1,40.4,61.8,7.9,86.4C367.1,110,356.7,114.4,343.5,118.6z M259.1,141.2
+		c-4.2,19.2-8.2,36.9-12.1,54.3c-1.5,6.6-0.7,11.9,7.3,12.4c18.5,0.9,37.1,0,53.6-9.7c12.6-7.3,17.9-18.8,16.1-33.4
+		c-1.8-13.9-11.7-19.4-23.8-23.2C286.7,137.6,273.7,144.3,259.1,141.2z M300,44.6c-5.7,3.8-16.6-5.3-20.1,6.6
+		c-3.8,13.3-6.4,26.9-9.5,40.6c-1.1,4.6,0.4,8.8,5.5,9.1c19.9,1.1,39.7,1.3,55.8-12.8c15.7-13.7,10.8-34.9-9.1-41.3
+		C315.6,44.9,308.4,44.9,300,44.6z"/>
+	<path class="st0" d="M822.7,48C811.4,17,782.9,9.7,753.8,6.9c-26.9-2.7-54.1-1.3-81,1.8c-9.3,1.1-13.9,4.6-16.1,14.4
+		c-15.9,72.5-32.4,144.9-48.6,217.4c-0.7,2.7-2,5.5,1.5,8.8c6.4,0,13.9,0,21.2,0c26.9,0,34.9-6.4,40.8-32.5
+		c3.5-15.5,7.1-31.1,10.4-46.2c5.5-2,9.9-0.4,14.3-0.2c38.8,1.3,75.7-5.1,104.2-34.2C824.9,111.3,835,81.3,822.7,48z M774.1,86.6
+		c-5.3,25.2-26.9,40.9-56.7,41.1c-19.4,0-21.2-2.2-17-21.9c3.5-16.1,7.3-32,10.2-48.2c1.3-8,5.3-11,13-11c8.2-0.2,16.3-0.7,24.5,0.9
+		C769.3,51.5,778.5,65.4,774.1,86.6z"/>
+	<path class="st0" d="M604.8,11.1c-51-18.6-100-15.2-142.2,21.2c-40.4,34.9-53.2,81.3-48.1,133.4c2.9,29.8,15.5,54.8,42.2,70
+		c34,19.4,70.4,20.1,107.1,9.3c8.2-2.4,14.3-8.2,16.6-16.8c3.3-13,6.2-26.1,9.5-40.9c-11.5,6.2-20.7,11.9-31.3,15.2
+		c-33.3,10.4-66.7-2.4-78.4-30.3c-16.1-38.4,6.8-99,45-116.6c31.3-14.4,61.6-8,91.8,8.8c1.8-6.6,3.5-12.6,5.1-18.6
+		C626.4,27.6,622.7,17.7,604.8,11.1z"/>
+	<path class="st1" d="M92.7,29.2c30,15.2,54.1,37.1,71.7,65.4c10.8,17.4,9.5,36.7-2.6,53.5c-24.9,34.9-58.1,60.5-96.5,78.2
+		c-25.8,11.9-54.3-2-65.3-30c15.5-8.2,30.9-16.6,45-26.9c21.2-15.5,39.5-33.4,48.6-58.8C106,83.3,107.1,56.1,92.7,29.2z"/>
+	<path class="st1" d="M920.5,29.2c30,15,54.1,37.3,72,65.4c10.8,17,9.9,35.8-1.8,52.3c-25.2,35.8-58.9,61.8-98.2,79.7
+		c-25.6,11.5-53.4-2.7-64.2-30c14.6-8,29.4-15.9,42.8-25.8c21.9-15.9,41.3-34,50.5-60.3C934.1,83.1,935,55.9,920.5,29.2z"/>
+	<path class="st0" d="M92.7,29.2c14.3,26.9,13,53.9,0.7,81.1C74.6,89.9,51.2,76,26.5,65C39.5,29.8,69.1,14.4,92.7,29.2z"/>
+	<path class="st0" d="M920.5,29.2c14.6,26.9,13.7,53.9,0.9,81.3c-18.5-20.3-41.7-34-67.8-45.7c8.6-19.4,21-33.6,40.4-40.9
+		C903.9,19.9,912.5,22.8,920.5,29.2z"/>
+</g>
+</svg>
+    </div>
+
+    <section class="quote-header" aria-label="Cotización Convenios BCP">
+      <div class="header-content">
+        <div class="header-icon" aria-hidden="true">
+          <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 10h16l10 10v32a4 4 0 0 1-4 4H22a4 4 0 0 1-4-4V14a4 4 0 0 1 4-4Z" />
+            <path d="M38 10v11h10" />
+            <path d="M26 31h14M26 39h14M26 47h8" />
+          </svg>
+        </div>
+        <div class="header-copy">
+          <small>PROPUESTA PERSONALIZADA</small>
+          <h1>CONVENIOS BCP</h1>
+          <p>Oferta referencial sujeta a evaluación crediticia</p>
+        </div>
+      </div>
+
+      <div class="header-badge">Cotización</div>
+    </section>
+
+    <section class="card">
+      <div class="labels">
+        <div class="label"><span class="chev">›</span><span>CLIENTE</span></div>
+        <div class="label"><span class="chev">›</span><span>CONVENIO</span></div>
+        <div class="label"><span class="chev">›</span><span>MONTO QUE CALIFICA</span></div>
+        <div class="label"><span class="chev">›</span><span>CUOTA</span></div>
+        <div class="label"><span class="chev">›</span><span>PLAZO</span></div>
+        <div class="label"><span class="chev">›</span><span>TASA</span></div>
+        <div class="label"><span class="chev">›</span><span>PRIMER DESCUENTO EN BOLETA</span></div>
+        <div class="label"><span class="chev">›</span><span>MONTO DE DEUDA</span></div>
+        <div class="label"><span class="chev">›</span><span>LIBRE DISPONIBILIDAD</span></div>
+      </div>
+
+      <form class="values" autocomplete="off">
+        <div class="value"><input class="field" type="text" value="" placeholder="Ingrese nombre del cliente" data-format="upper" /></div>
+        <div class="value"><input class="field" type="text" value="" placeholder="Ingrese convenio" data-format="upper" /></div>
+        <div class="value"><input class="field money" type="text" value="" placeholder="Ingrese monto que califica" data-format="money" /></div>
+        <div class="value"><input class="field money normal" type="text" value="" placeholder="Ingrese cuota" data-format="money" /></div>
+        <div class="value"><input class="field number" type="text" value="" placeholder="Ingrese plazo" data-format="integer" /></div>
+        <div class="value"><input class="field percent" type="text" value="" placeholder="Ingrese tasa" data-format="percent" /></div>
+        <div class="value"><input class="field month" type="text" value="" placeholder="Ingrese mes" list="meses-boleta" data-format="month" /></div>
+        <div class="value"><input class="field money red" type="text" value="" placeholder="Ingrese monto de deuda" data-format="money" /></div>
+        <div class="value"><input class="field money normal" type="text" value="" placeholder="Ingrese libre disponibilidad" data-format="money" /></div>
+      </form>
+    </section>
+
+    <section class="commitment">
+      <svg class="shield" viewBox="0 0 52 64" fill="none" aria-hidden="true">
+        <path d="M26 4c7 7 16 8 20 8v18c0 16-11 25-20 30C17 55 6 46 6 30V12c4 0 13-1 20-8z" stroke="#003b8f" stroke-width="2.5" />
+        <path d="M18 33l5 6 12-19" stroke="#ff7900" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      <div class="tagline">Tu éxito<span>es nuestro compromiso</span></div>
+    </section>
+
+    <div class="bottom-corner" aria-hidden="true">
+      <img class="bottom-isotype" alt="Isotipo BCP" src="data:image/png;base64,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" />
+    </div>
+  </main>
+
+  <datalist id="meses-boleta">
+    <option value="Enero"></option>
+    <option value="Febrero"></option>
+    <option value="Marzo"></option>
+    <option value="Abril"></option>
+    <option value="Mayo"></option>
+    <option value="Junio"></option>
+    <option value="Julio"></option>
+    <option value="Agosto"></option>
+    <option value="Septiembre"></option>
+    <option value="Octubre"></option>
+    <option value="Noviembre"></option>
+    <option value="Diciembre"></option>
+  </datalist>
+
+  <script>
+    const moneyFormatter = new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+
+    function cleanNumber(value) {
+      const cleaned = String(value).replace(/[^0-9.]/g, "");
+      const firstDot = cleaned.indexOf(".");
+      if (firstDot === -1) return cleaned;
+      return cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).split(".").join("");
+    }
+
+    function formatMoney(value) {
+      const number = parseFloat(cleanNumber(value));
+      if (Number.isNaN(number)) return "";
+      return "S/. " + moneyFormatter.format(number);
+    }
+
+    function formatPercent(value) {
+      const number = parseFloat(cleanNumber(value));
+      if (Number.isNaN(number)) return "";
+      return number.toFixed(2) + "%";
+    }
+
+    function onlyDigits(value) {
+      return String(value).replace(/[^0-9]/g, "");
+    }
+
+    function formatDateWhileTyping(input) {
+      const digits = onlyDigits(input.value).slice(0, 8);
+      const parts = [];
+      if (digits.length > 0) parts.push(digits.slice(0, 2));
+      if (digits.length > 2) parts.push(digits.slice(2, 4));
+      if (digits.length > 4) parts.push(digits.slice(4, 8));
+      input.value = parts.join("/");
+    }
+
+    function normalizeDate(input) {
+      const digits = onlyDigits(input.value);
+      if (digits.length !== 8) return;
+      let day = Math.min(Math.max(parseInt(digits.slice(0, 2), 10), 1), 31);
+      let month = Math.min(Math.max(parseInt(digits.slice(2, 4), 10), 1), 12);
+      const year = digits.slice(4, 8);
+      input.value = String(day).padStart(2, "0") + "/" + String(month).padStart(2, "0") + "/" + year;
+    }
+
+    const validMonths = [
+      "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+      "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+    ];
+
+    function normalizeMonth(input) {
+      const value = String(input.value).trim();
+      if (!value) return;
+
+      const normalized = value
+        .toLocaleLowerCase("es-PE")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+
+      const match = validMonths.find((month) => {
+        return month
+          .toLocaleLowerCase("es-PE")
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "") === normalized;
+      });
+
+      input.value = match || value.charAt(0).toLocaleUpperCase("es-PE") + value.slice(1).toLocaleLowerCase("es-PE");
+    }
+
+    function buildExportClone() {
+      const original = document.getElementById("cotizacion");
+      const clone = original.cloneNode(true);
+      clone.id = "cotizacion-pdf-clone";
+      clone.classList.add("exporting");
+
+      clone.style.position = "fixed";
+      clone.style.left = "-10000px";
+      clone.style.top = "0";
+      clone.style.width = "1200px";
+      clone.style.height = "900px";
+      clone.style.transform = "none";
+      clone.style.zIndex = "-1";
+      clone.style.opacity = "1";
+      clone.style.pointerEvents = "none";
+      clone.style.boxShadow = "none";
+
+      const originalInputs = original.querySelectorAll("input");
+      const cloneCells = clone.querySelectorAll(".value");
+
+      cloneCells.forEach((cell, index) => {
+        const input = cell.querySelector("input");
+        const originalInput = originalInputs[index];
+        if (!input || !originalInput) return;
+
+        const span = document.createElement("span");
+        span.className = "export-text";
+        span.textContent = originalInput.value.trim() || originalInput.getAttribute("placeholder") || "";
+
+        if (!originalInput.value.trim()) span.classList.add("placeholder");
+        if (originalInput.classList.contains("red")) span.classList.add("red");
+        if (originalInput.classList.contains("month")) span.classList.add("month");
+
+        input.remove();
+        cell.appendChild(span);
+      });
+
+      document.body.appendChild(clone);
+      return clone;
+    }
+
+    async function waitForImages(container) {
+      const images = Array.from(container.querySelectorAll("img"));
+      await Promise.all(images.map((img) => {
+        if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+        return new Promise((resolve) => {
+          img.onload = () => resolve();
+          img.onerror = () => resolve();
+        });
+      }));
+    }
+
+    function setExportLoading(activeButton, loadingText) {
+      const buttons = Array.from(document.querySelectorAll(".export-btn"));
+      const previousStates = buttons.map((btn) => ({
+        button: btn,
+        text: btn.textContent,
+        disabled: btn.disabled
+      }));
+
+      buttons.forEach((btn) => {
+        btn.disabled = true;
+      });
+
+      if (activeButton) activeButton.textContent = loadingText;
+      return previousStates;
+    }
+
+    function restoreExportButtons(previousStates) {
+      previousStates.forEach(({ button, text, disabled }) => {
+        button.textContent = text;
+        button.disabled = disabled;
+      });
+    }
+
+    async function renderCotizacionCanvas() {
+      const clone = buildExportClone();
+
+      try {
+        await waitForImages(clone);
+        await new Promise((resolve) => setTimeout(resolve, 250));
+
+        if (!window.html2canvas) {
+          alert("No se cargó la librería de exportación. Revisa tu conexión a internet.");
+          return null;
+        }
+
+        return await html2canvas(clone, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: "#ffffff",
+          width: 1200,
+          height: 900,
+          windowWidth: 1200,
+          windowHeight: 900,
+          scrollX: 0,
+          scrollY: 0,
+          x: 0,
+          y: 0,
+          logging: false
+        });
+      } finally {
+        clone.remove();
+      }
+    }
+
+    async function exportPDF(button = document.querySelector('[data-export="pdf"]')) {
+      const previousStates = setExportLoading(button, "Generando PDF...");
+
+      try {
+        if (!window.jspdf) {
+          alert("No se cargó la librería de PDF. Revisa tu conexión a internet.");
+          return;
+        }
+
+        const canvas = await renderCotizacionCanvas();
+        if (!canvas) return;
+
+        const imgData = canvas.toDataURL("image/png", 1.0);
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({
+          orientation: "landscape",
+          unit: "px",
+          format: [1200, 900],
+          compress: true
+        });
+
+        pdf.addImage(imgData, "PNG", 0, 0, 1200, 900, undefined, "FAST");
+        pdf.save("cotizacion-convenios-bcp.pdf");
+      } catch (error) {
+        console.error(error);
+        alert("No se pudo generar el PDF exacto. Revisa la consola para ver el error.");
+      } finally {
+        restoreExportButtons(previousStates);
+      }
+    }
+
+    async function exportImage(button = document.querySelector('[data-export="image"]')) {
+      const previousStates = setExportLoading(button, "Generando imagen...");
+
+      try {
+        const canvas = await renderCotizacionCanvas();
+        if (!canvas) return;
+
+        const link = document.createElement("a");
+        link.download = "cotizacion-convenios-bcp.png";
+        link.href = canvas.toDataURL("image/png", 1.0);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      } catch (error) {
+        console.error(error);
+        alert("No se pudo generar la imagen exacta. Revisa la consola para ver el error.");
+      } finally {
+        restoreExportButtons(previousStates);
+      }
+    }
+
+    document.querySelectorAll(".field").forEach((field) => {
+      field.addEventListener("focus", () => {
+        if (field.dataset.format === "money") field.value = cleanNumber(field.value);
+        if (field.dataset.format === "percent") field.value = cleanNumber(field.value);
+      });
+
+      field.addEventListener("input", () => {
+        const format = field.dataset.format;
+
+        if (format === "upper") {
+          const cursor = field.selectionStart;
+          field.value = field.value.toUpperCase();
+          field.setSelectionRange(cursor, cursor);
+        }
+
+        if (format === "integer") {
+          field.value = onlyDigits(field.value);
+        }
+
+        if (format === "date") {
+          formatDateWhileTyping(field);
+        }
+
+        if (format === "month") {
+          const cursor = field.selectionStart;
+          field.value = field.value.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g, "");
+          field.setSelectionRange(Math.min(cursor, field.value.length), Math.min(cursor, field.value.length));
+        }
+      });
+
+      field.addEventListener("blur", () => {
+        const format = field.dataset.format;
+        if (format === "money") field.value = formatMoney(field.value);
+        if (format === "percent") field.value = formatPercent(field.value);
+        if (format === "date") normalizeDate(field);
+        if (format === "month") normalizeMonth(field);
+        if (format === "upper") field.value = field.value.toUpperCase().trim();
+      });
+    });
+  </script>
+</body>
+</html>
