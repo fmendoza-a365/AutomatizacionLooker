@@ -52,10 +52,10 @@ def get_html_base64(file_path):
 
 # --- CONSTANTES ---
 ZONAS_MAP = {
-    'NAHOMI DIAZ': 'CHICLAYO', 'JORGE RAMIREZ': 'CHICLAYO', 'JHON ZAMORA': 'CHICLAYO',
+    'NAHOMI DIAZ': 'CHICLAYO', 'JORGE RAMIREZ': 'CHICLAYO', 'OMAR MINAYA': 'CHICLAYO', 'JHON ZAMORA': 'CHICLAYO',
     'CRISTINA BRACAMONTE': 'CHICLAYO',                                          # MAYO - Nuevo
     'MILAGROS TUESTA': 'LIMA', 'KENNY MORALES': 'LIMA', 'ANGIE SILVERA': 'LIMA', 'MARIELLA PAÑAHUA': 'LIMA',
-    'LUIS CHUSE': 'LIMA', 'LUIS SHEPHERD': 'LIMA', 'LUIS MENDOZA': 'LIMA', 'PERCY ADRIANZEN': 'LIMA',  # MAYO - Nuevo
+    'LUIS CHUSE': 'LIMA', 'LUIS SHEPHERD': 'LIMA', 'LUIS MENDOZA': 'LIMA',
     'JIMMY COLLAZOS': 'TARAPOTO', 'JULIA OBLITAS': 'TRUJILLO',
     'VIOLETA LLERENA': 'AREQUIPA',                                              # MAYO - Nuevo (→ OTROS)
     'WINNIE': 'LIMA'
@@ -79,16 +79,20 @@ MESES_CONFIG = {
         'url': 'https://docs.google.com/spreadsheets/d/1zJONhh_3kih4HZUNvi3DC4Ybou84U-SUsiaOdbwEVJw/export?format=xlsx',
         'format': 'excel_multisheet',
         'metas': {
-            'CRISTINA BRACAMONTE': 1_000_000, 'JHON ZAMORA': 1_000_000, 'JORGE RAMIREZ': 1_000_000,
+            'CRISTINA BRACAMONTE': 1_000_000, 'JHON ZAMORA': 1_000_000, 'OMAR MINAYA': 1_000_000,
             'ANGIE SILVERA': 2_500_000, 'LUIS CHUSE': 1_500_000, 'LUIS MENDOZA': 1_000_000,
             'JIMMY COLLAZOS': 1_000_000, 'KENNY MORALES': 1_000_000, 'MILAGROS TUESTA': 1_500_000,
-            'MARIELLA PAÑAHUA': 1_000_000, 'PERCY ADRIANZEN': 1_000_000,
+            'MARIELLA PAÑAHUA': 1_000_000,
             'NAHOMI DIAZ': 1_000_000, 'VIOLETA LLERENA': 1_000_000,
             'WINNIE': 1_500_000,  # alias de MILAGROS TUESTA
         }
     },
     # Para agregar JUNIO: copiar este bloque, completar url y metas.
     # 'JUNIO': { 'url': '...', 'format': 'csv', 'metas': { ... } }
+}
+
+SUPERVISORES_EXCLUIDOS_POR_MES = {
+    'MAYO': {'PERCY ADRIANZEN'},
 }
 
 def get_meta_supervisor(supervisor, meses_activos):
@@ -115,7 +119,12 @@ ESTADO_COLORS = {
 REGION_COLORS = {'LIMA': '#1A4FA0', 'NORTE': '#E67212', 'OTROS': '#2B7DE9'}
 
 # --- PAGE CONFIG ---
-st.set_page_config(page_title="A365 BCP - Centro de Operaciones", layout="wide", page_icon="isotipobcp.png")
+st.set_page_config(
+    page_title="A365 BCP - Centro de Operaciones",
+    layout="wide",
+    page_icon="isotipobcp.png",
+    initial_sidebar_state="collapsed",
+)
 
 # --- LOGO ---
 def get_b64(path):
@@ -134,6 +143,12 @@ st.markdown(f"""
     @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap');
     html, body, [class*="css"] {{ font-family: 'Manrope', sans-serif !important; }}
     #MainMenu, footer, header {{ visibility: hidden; }}
+    section[data-testid="stSidebar"],
+    div[data-testid="stSidebar"],
+    [data-testid="collapsedControl"],
+    [data-testid="stSidebarCollapsedControl"] {{
+        display: none !important;
+    }}
     .block-container {{ padding-top: 0 !important; padding-bottom: 1rem !important; max-width: 1400px; }}
 
     .topbar {{ display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid #DDDDE5; margin-bottom:20px; }}
@@ -162,9 +177,6 @@ st.markdown(f"""
     h1,h2,h3,h4 {{ font-weight:700 !important; color:#1A4FA0 !important; }}
     div[data-testid="stMetricLabel"], div[data-testid="stMetricValue"] {{ display:none; }}
     div[data-testid="stDataFrame"] {{ border:1px solid #DDDDE5; border-radius:10px; overflow:hidden; }}
-
-    section[data-testid="stSidebar"] {{ background:#F7F7FB; border-right:1px solid #DDDDE5; }}
-    section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {{ font-size:13px; }}
 
     /* Responsive: gráficos en mobile */
     @media (max-width: 768px) {{
@@ -362,6 +374,10 @@ def load_data():
         df['CONVENIO'] = df['CONVENIO'].fillna('SIN CONVENIO').astype(str).str.strip().str.upper()
     if 'EJECUTIVO' in df.columns:
         df['EJECUTIVO'] = df['EJECUTIVO'].fillna('SIN ASIGNAR').astype(str).str.strip().str.upper()
+
+    for mes, supervisores in SUPERVISORES_EXCLUIDOS_POR_MES.items():
+        df = df[~((df['MES'] == mes) & (df['SUPERVISOR'].isin(supervisores)))].copy()
+
     # --- Unificar columnas con nombres distintos entre meses ---
     # DNI (Abril) == DOCUMENTO (Mayo) → consolidar en columna DNI
     if 'DOCUMENTO' in df.columns and 'DNI' not in df.columns:
@@ -404,7 +420,7 @@ if meses_fallidos:
         """)
 
 # --- FILTROS GLOBALES SUPERIORES ---
-c_f1, c_f2 = st.columns([1, 3])
+c_f1, c_f2, c_f3 = st.columns([1, 1, 2])
 with c_f1:
     mes_opts = sorted(df['MES'].dropna().unique().tolist())
     with st.popover("📅 Seleccionar Mes", use_container_width=True):
@@ -417,20 +433,19 @@ with c_f2:
     # Espacio para info o dejar vacío para alinear a la izquierda
     st.markdown('<div style="margin-top:10px; color:#7B7B8A; font-size:12px;">Filtro global: Afecta a KPIs, Gráficos y Tablas</div>', unsafe_allow_html=True)
 
-# --- SIDEBAR ---
-with st.sidebar:
-    st.markdown(f'<div style="text-align:center;padding:12px 0 8px 0;">{logo_html}</div>', unsafe_allow_html=True)
-    st.markdown("---")
-    st.markdown("**Filtros Adicionales**")
-    
-    region_opts = ['LIMA', 'NORTE', 'OTROS']
-    selected_region = st.multiselect("Plaza", region_opts, default=region_opts)
-    supervisor_list = sorted(df[df['REGION'].isin(selected_region)]['SUPERVISOR'].unique().tolist())
-    selected_supervisor = st.multiselect("Supervisor", supervisor_list, default=supervisor_list)
-    convenio_list = sorted(df['CONVENIO'].unique().tolist())
-    selected_convenio = st.multiselect("Convenio", convenio_list, default=convenio_list)
-    ejecutivo_list = sorted(df[df['SUPERVISOR'].isin(selected_supervisor)]['EJECUTIVO'].unique().tolist())
-    selected_ejecutivo = st.multiselect("Ejecutivo", ejecutivo_list, default=ejecutivo_list)
+# --- FILTROS ADICIONALES EN CABECERA ---
+with c_f3:
+    with st.popover("Filtros Adicionales", use_container_width=True):
+        st.markdown("**Filtros de Dashboard**")
+
+        region_opts = ['LIMA', 'NORTE', 'OTROS']
+        selected_region = st.multiselect("Plaza", region_opts, default=region_opts)
+        supervisor_list = sorted(df[df['REGION'].isin(selected_region)]['SUPERVISOR'].unique().tolist())
+        selected_supervisor = st.multiselect("Supervisor", supervisor_list, default=supervisor_list)
+        convenio_list = sorted(df['CONVENIO'].unique().tolist())
+        selected_convenio = st.multiselect("Convenio", convenio_list, default=convenio_list)
+        ejecutivo_list = sorted(df[df['SUPERVISOR'].isin(selected_supervisor)]['EJECUTIVO'].unique().tolist())
+        selected_ejecutivo = st.multiselect("Ejecutivo", ejecutivo_list, default=ejecutivo_list)
 
 filtered_df = df[
     (df['MES'].isin(selected_mes)) &
@@ -449,7 +464,7 @@ meta_base = sum(
     sum(v for k, v in MESES_CONFIG.get(m, {}).get('metas', {}).items() if k != 'WINNIE')
     for m in selected_mes
 )
-# Restar solo lo que el usuario deseleccionó explícitamente en el sidebar
+# Restar solo lo que el usuario deseleccionó explícitamente en filtros
 sups_deseleccionados = (set(supervisor_list) - set(selected_supervisor)) - {'WINNIE'}
 meta_excluida = get_metas_supervisores(sups_deseleccionados, selected_mes)
 meta_actual = max(meta_base - meta_excluida, 0) or meta_base
@@ -510,7 +525,7 @@ with c_head2:
     st.markdown('<div style="margin-top:18px;">', unsafe_allow_html=True)
     with st.popover("🔍 Filtrar por Zona", use_container_width=True):
         st.markdown("**Seleccionar Zonas**")
-        # Obtenemos zonas del df ya filtrado por la sidebar para mantener coherencia
+        # Obtenemos zonas del df ya filtrado por los controles superiores para mantener coherencia
         zonas_disponibles = sorted([z for z in filtered_df['ZONA_SUP'].unique() if z != 'N/A'])
         selected_zonas_sec = []
         for zona in zonas_disponibles:
