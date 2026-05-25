@@ -233,6 +233,45 @@ st.markdown(f"""
             grid-template-columns: 1fr !important;
             gap: 12px !important;
         }}
+        .topbar {{
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            gap: 10px !important;
+            padding: 12px 0 !important;
+            margin-bottom: 14px !important;
+        }}
+        .topbar-left {{
+            justify-content: space-between !important;
+            gap: 10px !important;
+        }}
+        .topbar-left img {{
+            height: 34px !important;
+            max-width: 110px !important;
+        }}
+        .topbar-title {{
+            flex: 1 !important;
+            font-size: 11px !important;
+            line-height: 1.35 !important;
+        }}
+        .topbar-right {{
+            width: 100% !important;
+            justify-content: space-between !important;
+            gap: 10px !important;
+        }}
+        .topbar-button {{
+            min-width: 132px !important;
+            margin-right: 0 !important;
+            padding: 8px 10px !important;
+        }}
+        .topbar-update {{
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 5px !important;
+            justify-content: flex-end !important;
+            font-size: 11px !important;
+            line-height: 1.35 !important;
+            text-align: right !important;
+        }}
         .section-header {{
             margin-top: 20px !important;
             padding: 12px !important;
@@ -311,8 +350,10 @@ st.markdown(f"""
             <svg width="12" height="12" viewBox="0 0 24 24" fill="white" style="margin-right:6px;"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
             Abrir Cotizador
         </a>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="#7B7B8A"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 11h-2V7h2zm0 4h-2v-2h2z"/></svg>
-        Datos actualizados cada 1 min
+        <span class="topbar-update">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="#7B7B8A"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 11h-2V7h2zm0 4h-2v-2h2z"/></svg>
+            Datos actualizados cada 1 min
+        </span>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -448,42 +489,17 @@ if meses_fallidos:
         2. Las hojas están vacías o el archivo no es accesible.
         """)
 
-# --- FILTROS GLOBALES SUPERIORES ---
-c_f1, c_f2, c_f3 = st.columns([1, 1, 2])
-with c_f1:
-    mes_opts = ordenar_meses(df['MES'].dropna().unique().tolist())
-    meses_default = get_mes_default(mes_opts)
-    with st.popover("📅 Seleccionar Mes", use_container_width=True):
-        st.markdown("**Meses de Gestión**")
-        selected_mes = []
-        for m in mes_opts:
-            if st.checkbox(m, value=m in meses_default, key=f"global_mes_{m}"):
-                selected_mes.append(m)
-with c_f2:
-    # Espacio para info o dejar vacío para alinear a la izquierda
-    st.markdown('<div style="margin-top:10px; color:#7B7B8A; font-size:12px;">Filtro global: Afecta a KPIs, Gráficos y Tablas</div>', unsafe_allow_html=True)
+# --- FILTRO GLOBAL SUPERIOR ---
+mes_opts = ordenar_meses(df['MES'].dropna().unique().tolist())
+meses_default = get_mes_default(mes_opts)
+with st.popover("📅 Seleccionar Mes", use_container_width=True):
+    st.markdown("**Meses de Gestión**")
+    selected_mes = []
+    for m in mes_opts:
+        if st.checkbox(m, value=m in meses_default, key=f"global_mes_{m}"):
+            selected_mes.append(m)
 
-# --- FILTROS ADICIONALES EN CABECERA ---
-with c_f3:
-    with st.popover("Filtros Adicionales", use_container_width=True):
-        st.markdown("**Filtros de Dashboard**")
-
-        region_opts = ['LIMA', 'NORTE', 'OTROS']
-        selected_region = st.multiselect("Plaza", region_opts, default=region_opts)
-        supervisor_list = sorted(df[df['REGION'].isin(selected_region)]['SUPERVISOR'].unique().tolist())
-        selected_supervisor = st.multiselect("Supervisor", supervisor_list, default=supervisor_list)
-        convenio_list = sorted(df['CONVENIO'].unique().tolist())
-        selected_convenio = st.multiselect("Convenio", convenio_list, default=convenio_list)
-        ejecutivo_list = sorted(df[df['SUPERVISOR'].isin(selected_supervisor)]['EJECUTIVO'].unique().tolist())
-        selected_ejecutivo = st.multiselect("Ejecutivo", ejecutivo_list, default=ejecutivo_list)
-
-filtered_df = df[
-    (df['MES'].isin(selected_mes)) &
-    (df['REGION'].isin(selected_region)) &
-    (df['SUPERVISOR'].isin(selected_supervisor)) &
-    (df['CONVENIO'].isin(selected_convenio)) &
-    (df['EJECUTIVO'].isin(selected_ejecutivo))
-]
+filtered_df = df[df['MES'].isin(selected_mes)]
 
 # --- KPIs ---
 desembolsado_df = filtered_df[filtered_df['ESTADO LIMPIO'] == 'DESEMBOLSADO']
@@ -494,10 +510,7 @@ meta_base = sum(
     sum(v for k, v in MESES_CONFIG.get(m, {}).get('metas', {}).items() if k != 'WINNIE')
     for m in selected_mes
 )
-# Restar solo lo que el usuario deseleccionó explícitamente en filtros
-sups_deseleccionados = (set(supervisor_list) - set(selected_supervisor)) - {'WINNIE'}
-meta_excluida = get_metas_supervisores(sups_deseleccionados, selected_mes)
-meta_actual = max(meta_base - meta_excluida, 0) or meta_base
+meta_actual = meta_base
 
 
 monto_desembolso = desembolsado_df['MAF NETO_Num'].sum()
