@@ -3,6 +3,8 @@ import pandas as pd
 import plotly.graph_objects as go
 import base64
 from io import BytesIO
+from datetime import datetime
+from zoneinfo import ZoneInfo
 import requests
 import json
 
@@ -94,6 +96,33 @@ MESES_CONFIG = {
 SUPERVISORES_EXCLUIDOS_POR_MES = {
     'MAYO': {'PERCY ADRIANZEN'},
 }
+
+MESES_ORDEN = [
+    'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
+    'JULIO', 'AGOSTO', 'SETIEMBRE', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'
+]
+
+def ordenar_meses(meses):
+    orden = {mes: idx for idx, mes in enumerate(MESES_ORDEN)}
+    return sorted(meses, key=lambda mes: orden.get(mes, len(orden)))
+
+def get_mes_default(mes_opts):
+    if not mes_opts:
+        return set()
+    try:
+        mes_numero = datetime.now(ZoneInfo("America/Lima")).month
+    except Exception:
+        mes_numero = datetime.now().month
+    meses_actuales = {
+        1: ('ENERO',), 2: ('FEBRERO',), 3: ('MARZO',), 4: ('ABRIL',),
+        5: ('MAYO',), 6: ('JUNIO',), 7: ('JULIO',), 8: ('AGOSTO',),
+        9: ('SETIEMBRE', 'SEPTIEMBRE'), 10: ('OCTUBRE',),
+        11: ('NOVIEMBRE',), 12: ('DICIEMBRE',),
+    }
+    for mes_actual in meses_actuales[mes_numero]:
+        if mes_actual in mes_opts:
+            return {mes_actual}
+    return {ordenar_meses(mes_opts)[-1]}
 
 def get_meta_supervisor(supervisor, meses_activos):
     """Meta acumulada de un supervisor para los meses seleccionados."""
@@ -422,12 +451,13 @@ if meses_fallidos:
 # --- FILTROS GLOBALES SUPERIORES ---
 c_f1, c_f2, c_f3 = st.columns([1, 1, 2])
 with c_f1:
-    mes_opts = sorted(df['MES'].dropna().unique().tolist())
+    mes_opts = ordenar_meses(df['MES'].dropna().unique().tolist())
+    meses_default = get_mes_default(mes_opts)
     with st.popover("📅 Seleccionar Mes", use_container_width=True):
         st.markdown("**Meses de Gestión**")
         selected_mes = []
         for m in mes_opts:
-            if st.checkbox(m, value=True, key=f"global_mes_{m}"):
+            if st.checkbox(m, value=m in meses_default, key=f"global_mes_{m}"):
                 selected_mes.append(m)
 with c_f2:
     # Espacio para info o dejar vacío para alinear a la izquierda
