@@ -60,6 +60,10 @@ ZONAS_MAP = {
     'LUIS CHUSE': 'LIMA', 'LUIS SHEPHERD': 'LIMA', 'LUIS MENDOZA': 'LIMA',
     'JIMMY COLLAZOS': 'TARAPOTO', 'JULIA OBLITAS': 'TRUJILLO',
     'VIOLETA LLERENA': 'AREQUIPA',                                              # MAYO - Nuevo (→ OTROS)
+    'WENDY IPANEQUE': 'PIURA',                                                  # MAYO - Nuevo
+    'ALEXANDRA GUZMAN': 'PIURA',                                                # MAYO - Nuevo
+    'AMALIA QUINDE': 'PIURA',                                                   # MAYO - Nuevo
+    'JORGE CASTILLO': 'PIURA',                                                  # MAYO - Nuevo
     'WINNIE': 'LIMA'
 }
 NORTE = ['CHICLAYO', 'PIURA', 'TRUJILLO']
@@ -86,6 +90,8 @@ MESES_CONFIG = {
             'JIMMY COLLAZOS': 1_000_000, 'KENNY MORALES': 1_000_000, 'MILAGROS TUESTA': 1_500_000,
             'MARIELLA PAÑAHUA': 1_000_000,
             'NAHOMI DIAZ': 1_000_000, 'VIOLETA LLERENA': 1_000_000,
+            'WENDY IPANEQUE': 1_000_000, 'ALEXANDRA GUZMAN': 1_000_000,
+            'AMALIA QUINDE': 1_000_000, 'JORGE CASTILLO': 1_000_000,
             'WINNIE': 1_500_000,  # alias de MILAGROS TUESTA
         }
     },
@@ -492,7 +498,7 @@ if meses_fallidos:
 # --- FILTRO GLOBAL SUPERIOR ---
 mes_opts = ordenar_meses(df['MES'].dropna().unique().tolist())
 meses_default = get_mes_default(mes_opts)
-with st.popover("📅 Seleccionar Mes", use_container_width=True):
+with st.popover("📅 Seleccionar Mes", width="stretch"):
     st.markdown("**Meses de Gestión**")
     selected_mes = []
     for m in mes_opts:
@@ -566,7 +572,7 @@ with c_head1:
 
 with c_head2:
     st.markdown('<div style="margin-top:18px;">', unsafe_allow_html=True)
-    with st.popover("🔍 Filtrar por Zona", use_container_width=True):
+    with st.popover("🔍 Filtrar por Zona", width="stretch"):
         st.markdown("**Seleccionar Zonas**")
         # Obtenemos zonas del df ya filtrado por los controles superiores para mantener coherencia
         zonas_disponibles = sorted([z for z in filtered_df['ZONA_SUP'].unique() if z != 'N/A'])
@@ -604,7 +610,7 @@ with c1:
     mx = v_sup['MAF NETO_Num'].max()
     fig1.update_xaxes(range=[0, mx * 1.40] if mx > 0 else None)
     fig1.update_layout(xaxis_title="", yaxis_title="")
-    st.plotly_chart(fig1, use_container_width=True, config={'displayModeBar': False})
+    st.plotly_chart(fig1, width='stretch', config={'displayModeBar': False})
 
 with c2:
     st.markdown(f'<p {title_style}>Funnel por Estado</p>', unsafe_allow_html=True)
@@ -631,7 +637,7 @@ with c2:
     mxf = e_dist['Cantidad'].max()
     fig2.update_xaxes(range=[0, mxf * 1.40] if mxf > 0 else None)
     fig2.update_layout(barmode='stack', xaxis_title="", yaxis_title="")
-    st.plotly_chart(fig2, use_container_width=True, config={'displayModeBar': False})
+    st.plotly_chart(fig2, width='stretch', config={'displayModeBar': False})
 
 # ROW 2
 c3, c4, c5 = st.columns(3)
@@ -647,7 +653,7 @@ with c3:
     ))
     fig3 = clean_fig(fig3, 260)
     fig3.update_layout(xaxis_title="", yaxis_title="")
-    st.plotly_chart(fig3, use_container_width=True, config={'displayModeBar': False})
+    st.plotly_chart(fig3, width='stretch', config={'displayModeBar': False})
 
 with c4:
     st.markdown(f'<p {title_style}>Distribución por Región</p>', unsafe_allow_html=True)
@@ -669,7 +675,7 @@ with c4:
             font=dict(family="Manrope")
         )]
     )
-    st.plotly_chart(fig4, use_container_width=True, config={'displayModeBar': False})
+    st.plotly_chart(fig4, width='stretch', config={'displayModeBar': False})
 
 with c5:
     st.markdown(f'<p {title_style}>Top Ejecutivos por Desembolso</p>', unsafe_allow_html=True)
@@ -689,7 +695,7 @@ with c5:
         mx5 = top_asesores['MAF NETO_Num'].max()
         fig5.update_xaxes(range=[0, mx5 * 1.40] if mx5 > 0 else None)
         fig5.update_layout(xaxis_title="", yaxis_title="")
-        st.plotly_chart(fig5, use_container_width=True, config={'displayModeBar': False})
+        st.plotly_chart(fig5, width='stretch', config={'displayModeBar': False})
     else:
         st.info("Columna de nombres no disponible.")
 
@@ -798,11 +804,11 @@ def color_total_row(row):
 
 with tab1:
     if not df_super.empty: 
-        st.dataframe(df_super.style.apply(color_total_row, axis=1), use_container_width=True, hide_index=True, column_config=cc)
+        st.dataframe(df_super.style.apply(color_total_row, axis=1), width='stretch', hide_index=True, column_config=cc)
         st.markdown(create_download_link(df_super, "Gestion_Supervisor.xlsx", "Exportar Supervisor"), unsafe_allow_html=True)
 with tab2:
     if not df_plaza.empty: 
-        st.dataframe(df_plaza.style.apply(color_total_row, axis=1), use_container_width=True, hide_index=True, column_config=cc)
+        st.dataframe(df_plaza.style.apply(color_total_row, axis=1), width='stretch', hide_index=True, column_config=cc)
         st.markdown(create_download_link(df_plaza, "Gestion_Plaza.xlsx", "Exportar Plaza"), unsafe_allow_html=True)
 
 # --- DETALLE ---
@@ -838,7 +844,7 @@ with st.expander("Detalle detallado por estado", expanded=True):
                 df_tab = show_df[show_df['ESTADO LIMPIO'] == estado_original]
             
             if not df_tab.empty:
-                st.dataframe(df_tab, use_container_width=True, hide_index=True)
+                st.dataframe(df_tab, width='stretch', hide_index=True)
                 st.markdown(create_download_link(df_tab, f"Detalle_{nombre_tab.replace(' ', '_')}.xlsx", f"Exportar {nombre_tab}"), unsafe_allow_html=True)
             else:
                 st.info(f"No hay operaciones en estado: {nombre_tab}")
