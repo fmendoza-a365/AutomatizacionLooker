@@ -819,7 +819,7 @@ st.markdown("""<div class="section-header">
 
 with st.expander("Detalle detallado por estado", expanded=True):
     # Limpieza de columnas para el detalle
-    bad_cols = ['MAF NETO_Num', 'ZONA_SUP', 'REGION', 'PLAZA DE VENTA', 'FECHA FILTRO', 'FECHA DE INGRESO', 'FECHA DE DESEMBOLSO']
+    bad_cols = ['MAF NETO_Num', 'PLAZA DE VENTA', 'FECHA FILTRO', 'FECHA DE INGRESO', 'FECHA DE DESEMBOLSO']
     show_df = filtered_df.copy()
     show_df = show_df.loc[:, ~show_df.columns.str.contains('^Unnamed')]
     show_df = show_df.drop(columns=[c for c in bad_cols if c in show_df.columns])
