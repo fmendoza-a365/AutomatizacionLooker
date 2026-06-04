@@ -55,8 +55,9 @@ def get_html_base64(file_path):
 # --- CONSTANTES ---
 ZONAS_MAP = {
     'NAHOMI DIAZ': 'CHICLAYO', 'JORGE RAMIREZ': 'CHICLAYO', 'OMAR MINAYA': 'CHICLAYO', 'JHON ZAMORA': 'CHICLAYO',
-    'CRISTINA BRACAMONTE': 'CHICLAYO',                                          # MAYO - Nuevo
-    'MILAGROS TUESTA': 'LIMA', 'KENNY MORALES': 'LIMA', 'ANGIE SILVERA': 'LIMA', 'MARIELLA PAÑAHUA': 'LIMA',
+    'CRISTINA BRACAMONTE': 'TRUJILLO',                                          # JUNIO - Actualizado (antes CHICLAYO)
+    'MILAGROS TUESTA': 'LIMA', 'KENNY MORALES': 'LIMA', 'ANGIE SILVERA': 'LIMA',
+    'MARIELLA PAÑAHUA': 'AYACUCHO',                                             # JUNIO - Actualizado (antes LIMA)
     'LUIS CHUSE': 'LIMA', 'LUIS SHEPHERD': 'LIMA', 'LUIS MENDOZA': 'LIMA',
     'JIMMY COLLAZOS': 'TARAPOTO', 'JULIA OBLITAS': 'TRUJILLO',
     'VIOLETA LLERENA': 'AREQUIPA',                                              # MAYO - Nuevo (→ OTROS)
