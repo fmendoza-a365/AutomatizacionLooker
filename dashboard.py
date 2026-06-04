@@ -68,6 +68,7 @@ ZONAS_MAP = {
     'WINNIE': 'LIMA'
 }
 NORTE = ['CHICLAYO', 'PIURA', 'TRUJILLO']
+SUR = ['AREQUIPA']
 
 # --- CONFIGURACIÓN POR MES (URL + Formato + Metas) ---
 MESES_CONFIG = {
@@ -164,7 +165,7 @@ ESTADO_COLORS = {
     'OBSERVADO BACK': '#5C5C66', 'PENDIENTE DE DOCUMENTAR': '#1A4FA0',
 }
 
-REGION_COLORS = {'LIMA': '#1A4FA0', 'NORTE': '#E67212', 'OTROS': '#2B7DE9'}
+REGION_COLORS = {'LIMA': '#1A4FA0', 'NORTE': '#E67212', 'SUR': '#7C5CBF', 'OTROS': '#2B7DE9'}
 
 # --- PAGE CONFIG ---
 st.set_page_config(
@@ -486,7 +487,7 @@ def load_data():
             df = df.drop(columns=['ESTADO'])
 
     df['ZONA_SUP'] = df['SUPERVISOR'].map(ZONAS_MAP).fillna('N/A')
-    df['REGION'] = df['ZONA_SUP'].apply(lambda z: 'LIMA' if z == 'LIMA' else ('NORTE' if z in NORTE else 'OTROS'))
+    df['REGION'] = df['ZONA_SUP'].apply(lambda z: 'LIMA' if z == 'LIMA' else ('NORTE' if z in NORTE else ('SUR' if z in SUR else 'OTROS')))
     return df
 
 with st.spinner('Conectando...'):
@@ -762,13 +763,13 @@ def build_matrix(data, group_col, meses_activos):
     if group_col == 'SUPERVISOR':
         res['META OBJETIVO'] = [get_meta_supervisor(s, meses_activos) for s in res.index]
     else:
-        plazas_metas = {'LIMA': 0, 'NORTE': 0, 'OTROS': 0}
+        plazas_metas = {'LIMA': 0, 'NORTE': 0, 'SUR': 0, 'OTROS': 0}
         for mes in meses_activos:
             for sup, meta in MESES_CONFIG.get(mes, {}).get('metas', {}).items():
                 if sup == 'WINNIE':
                     continue
                 zona = ZONAS_MAP.get(sup, 'OTROS')
-                region = 'LIMA' if zona == 'LIMA' else ('NORTE' if zona in NORTE else 'OTROS')
+                region = 'LIMA' if zona == 'LIMA' else ('NORTE' if zona in NORTE else ('SUR' if zona in SUR else 'OTROS'))
                 plazas_metas[region] += meta
         res['META OBJETIVO'] = [plazas_metas.get(p, 0) for p in res.index]
     res['AVANCE'] = (res['TOTAL DESEMBOLSO'] / res['META OBJETIVO'] * 100).fillna(0)
