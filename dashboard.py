@@ -750,6 +750,9 @@ def build_matrix(data, group_col, meses_activos):
         if data.empty: return pd.DataFrame()
         ps = data.pivot_table(index=group_col, columns='ESTADO LIMPIO', values='MAF NETO_Num', aggfunc='sum', fill_value=0)
         pc = data.pivot_table(index=group_col, columns='ESTADO LIMPIO', values='MAF NETO_Num', aggfunc='count', fill_value=0)
+        full_index = ['LIMA', 'NORTE', 'SUR', 'OTROS']
+        ps = ps.reindex(full_index, fill_value=0)
+        pc = pc.reindex(full_index, fill_value=0)
         res = pd.DataFrame(index=ps.index)
 
     res['TOTAL DESEMBOLSO'] = g(ps, 'DESEMBOLSADO')
