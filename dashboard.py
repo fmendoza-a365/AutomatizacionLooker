@@ -57,6 +57,7 @@ ZONAS_MAP = {
     'NAHOMI DIAZ': 'CHICLAYO', 'JORGE RAMIREZ': 'CHICLAYO', 'OMAR MINAYA': 'CHICLAYO', 'JHON ZAMORA': 'CHICLAYO',
     'CRISTINA BRACAMONTE': 'TRUJILLO',                                          # JUNIO - Actualizado (antes CHICLAYO)
     'MILAGROS TUESTA': 'LIMA', 'KENNY MORALES': 'LIMA', 'ANGIE SILVERA': 'LIMA',
+    'JOSE LUIS QUINTEROS': 'LIMA',                                              # JUNIO - Nuevo
     'MARIELLA PAÑAHUA': 'AYACUCHO',                                             # JUNIO - Actualizado (antes LIMA)
     'LUIS CHUSE': 'LIMA', 'LUIS SHEPHERD': 'LIMA', 'LUIS MENDOZA': 'LIMA',
     'JIMMY COLLAZOS': 'TARAPOTO', 'JULIA OBLITAS': 'TRUJILLO',
@@ -108,6 +109,7 @@ MESES_CONFIG = {
             'NAHOMI DIAZ': 1_000_000, 'VIOLETA LLERENA': 1_000_000,
             'WENDY IPANEQUE': 1_000_000, 'ALEXANDRA GUZMAN': 1_000_000,
             'AMALIA QUINDE': 1_000_000, 'JORGE CASTILLO': 1_000_000,
+            'JOSE LUIS QUINTEROS': 1_000_000,                                   # JUNIO - Nuevo
             'WINNIE': 2_000_000,  # alias de MILAGROS TUESTA
         }
     },
