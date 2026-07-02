@@ -113,6 +113,21 @@ MESES_CONFIG = {
             'WINNIE': 2_000_000,  # alias de MILAGROS TUESTA
         }
     },
+    'JULIO': {
+        'url': 'https://docs.google.com/spreadsheets/d/1_kCvxiKSwk9juJMMl2o5MA6oVNJVolFwd-FdUzkyK90/export?format=xlsx',
+        'format': 'excel_multisheet',
+        'metas': {
+            'CRISTINA BRACAMONTE': 1_000_000, 'JHON ZAMORA': 1_000_000, 'OMAR MINAYA': 1_000_000,
+            'ANGIE SILVERA': 2_000_000, 'LUIS CHUSE': 2_000_000,
+            'JIMMY COLLAZOS': 800_000, 'KENNY MORALES': 1_000_000, 'MILAGROS TUESTA': 2_000_000,
+            'MARIELLA PAÑAHUA': 800_000,
+            'NAHOMI DIAZ': 1_000_000, 'VIOLETA LLERENA': 1_000_000,
+            'WENDY IPANEQUE': 1_000_000, 'ALEXANDRA GUZMAN': 1_000_000,
+            'AMALIA QUINDE': 1_000_000, 'JORGE CASTILLO': 1_000_000,
+            'JOSE LUIS QUINTEROS': 1_000_000,
+            'WINNIE': 2_000_000,  # alias de MILAGROS TUESTA
+        }
+    },
 }
 
 SUPERVISORES_EXCLUIDOS_POR_MES = {
