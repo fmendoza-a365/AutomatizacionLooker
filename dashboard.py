@@ -467,11 +467,31 @@ def load_data():
 
     # --- LIMPIEZA UNIFICADA ---
     if 'MAF NETO' in df.columns:
-        df['MAF NETO'] = df['MAF NETO'].fillna("0")
-        df['MAF NETO_Num'] = df['MAF NETO'].astype(str).str.replace('S/', '', regex=False).str.strip()
-        df['MAF NETO_Num'] = df['MAF NETO_Num'].str.replace('.', '', regex=False)
-        df['MAF NETO_Num'] = df['MAF NETO_Num'].str.replace(',', '.', regex=False)
-        df['MAF NETO_Num'] = pd.to_numeric(df['MAF NETO_Num'], errors='coerce').fillna(0)
+        def clean_maf_neto_val(val):
+            if pd.isna(val):
+                return 0.0
+            if isinstance(val, (int, float)):
+                return float(val)
+            s = str(val).replace('S/', '').replace(' ', '').strip()
+            if not s:
+                return 0.0
+            if ',' in s and '.' in s:
+                if s.rfind('.') < s.rfind(','):
+                    s = s.replace('.', '').replace(',', '.')
+                else:
+                    s = s.replace(',', '')
+            elif ',' in s:
+                parts = s.split(',')
+                if len(parts[-1]) == 3:
+                    s = s.replace(',', '')
+                else:
+                    s = s.replace(',', '.')
+            try:
+                return float(s)
+            except ValueError:
+                return 0.0
+
+        df['MAF NETO_Num'] = df['MAF NETO'].apply(clean_maf_neto_val)
     df['SUPERVISOR'] = df['SUPERVISOR'].fillna('SIN SUPERVISOR').astype(str).str.strip().str.upper()
     if 'PLAZA DE VENTA' in df.columns:
         df['PLAZA DE VENTA'] = df['PLAZA DE VENTA'].fillna('SIN PLAZA').astype(str).str.strip()
