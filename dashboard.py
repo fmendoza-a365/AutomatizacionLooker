@@ -66,7 +66,10 @@ ZONAS_MAP = {
     'ALEXANDRA GUZMAN': 'PIURA',                                                # MAYO - Nuevo
     'AMALIA QUINDE': 'PIURA',                                                   # MAYO - Nuevo
     'JORGE CASTILLO': 'PIURA',                                                  # MAYO - Nuevo
-    'WINNIE': 'LIMA'
+    'WINNIE': 'LIMA',
+    'NATHALIE ARANDA': 'LIMA',                                                  # JULIO - Nuevo
+    'THALIA SALOME': 'HUANCAYO',                                                # JULIO - Nuevo
+    'MILUSKA LINARES': 'TRUJILLO'                                               # JULIO - Nuevo
 }
 NORTE = ['CHICLAYO', 'PIURA', 'TRUJILLO']
 SUR = ['AREQUIPA']
@@ -126,6 +129,9 @@ MESES_CONFIG = {
             'AMALIA QUINDE': 1_000_000, 'JORGE CASTILLO': 1_000_000,
             'JOSE LUIS QUINTEROS': 1_000_000,
             'WINNIE': 2_000_000,  # alias de MILAGROS TUESTA
+            'NATHALIE ARANDA': 500_000,
+            'THALIA SALOME': 1_000_000,
+            'MILUSKA LINARES': 1_000_000,
         }
     },
 }
