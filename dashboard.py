@@ -69,7 +69,9 @@ ZONAS_MAP = {
     'WINNIE': 'LIMA',
     'NATHALIE ARANDA': 'LIMA',                                                  # JULIO - Nuevo
     'THALIA SALOME': 'HUANCAYO',                                                # JULIO - Nuevo
-    'MILUSKA LINARES': 'TRUJILLO'                                               # JULIO - Nuevo
+    'MILUSKA LINARES': 'TRUJILLO',                                              # JULIO - Nuevo
+    'ARACELY VENTURA': 'CHICLAYO',                                              # JULIO - Nuevo
+    'WINNIE ESCALANTE': 'LIMA'                                                  # JULIO - Nuevo
 }
 NORTE = ['CHICLAYO', 'PIURA', 'TRUJILLO']
 SUR = ['AREQUIPA']
@@ -132,6 +134,8 @@ MESES_CONFIG = {
             'NATHALIE ARANDA': 500_000,
             'THALIA SALOME': 1_000_000,
             'MILUSKA LINARES': 1_000_000,
+            'ARACELY VENTURA': 1_000_000,
+            'WINNIE ESCALANTE': 2_000_000,
         }
     },
 }
@@ -432,6 +436,10 @@ def _load_excel_multisheet(url):
                     df_sheet = df_sheet.loc[:, df_sheet.columns.notna()]
                     df_sheet = df_sheet.dropna(how='all')
                     if not df_sheet.empty:
+                        # Normalizar nombres de columnas (p. ej. 'Columna 10' a 'MAF NETO')
+                        df_sheet.columns = [str(c).strip() for c in df_sheet.columns]
+                        if 'Columna 10' in df_sheet.columns:
+                            df_sheet = df_sheet.rename(columns={'Columna 10': 'MAF NETO'})
                         df_sheet['SUPERVISOR'] = sheet
                         all_dfs.append(df_sheet)
     except Exception as e:
