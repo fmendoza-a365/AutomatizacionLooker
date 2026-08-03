@@ -32,8 +32,8 @@ if st.query_params.get("view") == "cotizador":
     st.stop()
 
 # --- CONFIGURACIÓN DE VISTA (SMARTCASH) ---
-if st.query_params.get("view") == "smartcash":
-    st.set_page_config(layout="wide", page_title="SmartCash - Comisiones")
+def render_smartcash():
+    st.set_page_config(layout="wide", page_title="SmartCash")
     st.markdown("""
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap');
@@ -115,32 +115,29 @@ if st.query_params.get("view") == "smartcash":
 
     def sc_load_excel_multisheet(url):
         all_dfs = []
-        try:
-            res = requests.get(url)
-            if res.status_code == 200:
-                xls = pd.ExcelFile(BytesIO(res.content))
-                for sheet in xls.sheet_names:
-                    if sheet == 'CONSOLIDADO':
-                        continue
-                    df_raw = pd.read_excel(xls, sheet_name=sheet, header=None)
-                    header_idx = -1
-                    for idx, row in df_raw.iterrows():
-                        if row.astype(str).str.contains('PLAZA DE VENTA', na=False, case=False).any():
-                            header_idx = idx
-                            break
-                    if header_idx != -1:
-                        df_raw.columns = df_raw.iloc[header_idx]
-                        df_sheet = df_raw.iloc[header_idx + 1:].copy()
-                        df_sheet = df_sheet.loc[:, df_sheet.columns.notna()]
-                        df_sheet = df_sheet.dropna(how='all')
-                        if not df_sheet.empty:
-                            df_sheet.columns = [str(c).strip() for c in df_sheet.columns]
-                            if 'Columna 10' in df_sheet.columns:
-                                df_sheet = df_sheet.rename(columns={'Columna 10': 'MAF NETO'})
-                            df_sheet['SUPERVISOR'] = sheet
-                            all_dfs.append(df_sheet)
-        except Exception as e:
-            st.error(f"Error cargando datos: {e}")
+        res = requests.get(url, timeout=30)
+        res.raise_for_status()
+        xls = pd.ExcelFile(BytesIO(res.content))
+        for sheet in xls.sheet_names:
+            if str(sheet).strip().upper() == 'CONSOLIDADO':
+                continue
+            df_raw = pd.read_excel(xls, sheet_name=sheet, header=None)
+            header_idx = -1
+            for idx, row in df_raw.iterrows():
+                if row.astype(str).str.contains('PLAZA DE VENTA', na=False, case=False).any():
+                    header_idx = idx
+                    break
+            if header_idx != -1:
+                df_raw.columns = df_raw.iloc[header_idx]
+                df_sheet = df_raw.iloc[header_idx + 1:].copy()
+                df_sheet = df_sheet.loc[:, df_sheet.columns.notna()]
+                df_sheet = df_sheet.dropna(how='all')
+                if not df_sheet.empty:
+                    df_sheet.columns = [str(c).strip() for c in df_sheet.columns]
+                    if 'Columna 10' in df_sheet.columns:
+                        df_sheet = df_sheet.rename(columns={'Columna 10': 'MAF NETO'})
+                    df_sheet['SUPERVISOR'] = sheet
+                    all_dfs.append(df_sheet)
         return pd.concat(all_dfs, ignore_index=True) if all_dfs else pd.DataFrame()
 
     def sc_clean_maf(val):
@@ -162,16 +159,15 @@ if st.query_params.get("view") == "smartcash":
     def sc_load_month(mes_key):
         config = MESES_CONFIG.get(mes_key)
         if not config:
-            return pd.DataFrame()
+            raise ValueError(f"No existe configuración para {mes_key}.")
         if config['format'] == 'csv':
-            try:
-                df = pd.read_csv(config['url'])
-            except Exception:
-                return pd.DataFrame()
+            res = requests.get(config['url'], timeout=30)
+            res.raise_for_status()
+            df = pd.read_csv(BytesIO(res.content))
         elif config['format'] == 'excel_multisheet':
             df = sc_load_excel_multisheet(config['url'])
         else:
-            return pd.DataFrame()
+            raise ValueError(f"Formato no compatible para {mes_key}.")
         if df.empty:
             return df
         # Normalizar
@@ -179,17 +175,29 @@ if st.query_params.get("view") == "smartcash":
             df['MAF_NUM'] = df['MAF NETO'].apply(sc_clean_maf)
         else:
             df['MAF_NUM'] = 0.0
+        if 'SUPERVISOR' not in df.columns:
+            df['SUPERVISOR'] = 'SIN SUPERVISOR'
         df['SUPERVISOR'] = df['SUPERVISOR'].fillna('SIN SUPERVISOR').astype(str).str.strip().str.upper()
         if 'EJECUTIVO' in df.columns:
             df['EJECUTIVO'] = df['EJECUTIVO'].fillna('SIN ASIGNAR').astype(str).str.strip().str.upper()
-        # Normalizar ESTADO
-        estado_col = None
-        if 'ESTADO LIMPIO' in df.columns: estado_col = 'ESTADO LIMPIO'
-        elif 'ESTADO' in df.columns: estado_col = 'ESTADO'
-        if estado_col:
-            df['ESTADO_NORM'] = df[estado_col].astype(str).str.strip().str.upper().map(lambda x: ESTADO_MAPPING_SC.get(x, x))
         else:
-            df['ESTADO_NORM'] = 'SIN ESTADO'
+            df['EJECUTIVO'] = 'SIN ASIGNAR'
+        # Normalizar ESTADO
+        if 'ESTADO LIMPIO' in df.columns:
+            estado = df['ESTADO LIMPIO'].copy()
+            if 'ESTADO' in df.columns:
+                estado = estado.fillna(df['ESTADO'])
+        elif 'ESTADO' in df.columns:
+            estado = df['ESTADO'].copy()
+        else:
+            estado = pd.Series('SIN ESTADO', index=df.index)
+        estado = estado.fillna('SIN ESTADO').astype(str).str.strip().str.upper()
+        df['ESTADO_NORM'] = estado.map(lambda x: ESTADO_MAPPING_SC.get(x, x))
+
+        excluidos = SUPERVISORES_EXCLUIDOS_POR_MES.get(mes_key, set())
+        if excluidos:
+            df = df[~df['SUPERVISOR'].isin(excluidos)].copy()
+        df['MES'] = mes_key
         return df
 
     # --- Logo ---
@@ -216,11 +224,7 @@ if st.query_params.get("view") == "smartcash":
     """, unsafe_allow_html=True)
 
     # --- Selector de mes ---
-    MESES_ORDEN_SC = [
-        'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
-        'JULIO', 'AGOSTO', 'SETIEMBRE', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'
-    ]
-    meses_disponibles = [m for m in MESES_ORDEN_SC if m in MESES_CONFIG]
+    meses_disponibles = [m for m in MESES_ORDEN if m in MESES_CONFIG]
     # Mes por defecto: el actual o el último disponible
     try:
         mes_numero = datetime.now(ZoneInfo("America/Lima")).month
@@ -237,8 +241,13 @@ if st.query_params.get("view") == "smartcash":
 
     selected_mes_sc = st.selectbox("📅 Seleccionar Mes", meses_disponibles, index=default_idx, key="sc_mes")
 
-    with st.spinner('Cargando datos...'):
-        df_sc = sc_load_month(selected_mes_sc)
+    try:
+        with st.spinner('Cargando datos...'):
+            df_sc = sc_load_month(selected_mes_sc)
+    except Exception as error:
+        st.error(f"No fue posible cargar los datos de {selected_mes_sc}.")
+        st.caption(f"Detalle técnico: {error}")
+        st.stop()
 
     if df_sc.empty:
         st.warning(f"No se encontraron datos para el mes de {selected_mes_sc}.")
@@ -247,11 +256,59 @@ if st.query_params.get("view") == "smartcash":
     # Filtrar solo DESEMBOLSADO
     desemb_sc = df_sc[df_sc['ESTADO_NORM'] == 'DESEMBOLSADO'].copy()
 
-    # --- KPIs rápidos ---
+    SUELDO_BASE = 1300
+    MOVILIDAD = 300
+    TASA_SUP = 0.0006  # 0.06%
+    TASA_EJE = 0.0065  # 0.65%
+
+    # Incluir a todos los supervisores del mes, incluso si aún no desembolsaron.
+    supervisores_config = {
+        supervisor
+        for supervisor in MESES_CONFIG[selected_mes_sc].get('metas', {})
+        if supervisor != 'WINNIE'
+    }
+    supervisores_config -= SUPERVISORES_EXCLUIDOS_POR_MES.get(selected_mes_sc, set())
+    supervisores_datos = set(df_sc['SUPERVISOR'].dropna().unique()) - {'SIN SUPERVISOR'}
+    supervisores_activos = sorted(supervisores_config | supervisores_datos)
+
+    sup_group = desemb_sc.groupby('SUPERVISOR').agg(
+        Q_Desembolsos=('MAF_NUM', 'count'),
+        Desembolsos=('MAF_NUM', 'sum')
+    ).reindex(supervisores_activos, fill_value=0)
+    sup_group = sup_group.rename_axis('Nombre de Supervisor').reset_index()
+    sup_group = sup_group.sort_values(
+        ['Desembolsos', 'Nombre de Supervisor'], ascending=[False, True]
+    )
+    sup_group['Sueldo Base'] = SUELDO_BASE
+    sup_group['Movilidad'] = MOVILIDAD
+    sup_group['Comisión'] = (sup_group['Desembolsos'] * TASA_SUP).round(2)
+    sup_group['Total'] = sup_group['Comisión'] + sup_group['Sueldo Base'] + sup_group['Movilidad']
+
+    # Mostrar ejecutivos presentes en el mes, aun cuando todavía tengan cero desembolsos.
+    ejecutivos_activos = set(df_sc['EJECUTIVO'].dropna().unique()) - {'SIN ASIGNAR'}
+    if (desemb_sc['EJECUTIVO'] == 'SIN ASIGNAR').any():
+        ejecutivos_activos.add('SIN ASIGNAR')
+    ejecutivos_activos = sorted(ejecutivos_activos)
+
+    eje_group = desemb_sc.groupby('EJECUTIVO').agg(
+        Q_Desembolsos=('MAF_NUM', 'count'),
+        Desembolsos=('MAF_NUM', 'sum')
+    ).reindex(ejecutivos_activos, fill_value=0)
+    eje_group = eje_group.rename_axis('Nombre de Ejecutivo').reset_index()
+    eje_group = eje_group.sort_values(
+        ['Desembolsos', 'Nombre de Ejecutivo'], ascending=[False, True]
+    )
+    eje_group['Comisión'] = (eje_group['Desembolsos'] * TASA_EJE).round(2)
+
+    # --- KPIs rápidos (mismos redondeos que las tablas y exportaciones) ---
     total_desemb = desemb_sc['MAF_NUM'].sum()
     total_ops = len(desemb_sc)
-    total_comision_sup = total_desemb * 0.0006
-    total_comision_eje = total_desemb * 0.0065
+    total_comision_sup = sup_group['Comisión'].sum()
+    total_comision_eje = eje_group['Comisión'].sum()
+
+    def style_total(row):
+        is_total = any(str(val).upper() == 'TOTAL' for val in row.values)
+        return ['background-color: #FFEDD5; font-weight: 700;' if is_total else '' for _ in row]
 
     st.markdown(f"""
     <div class="sc-kpi-row">
@@ -281,21 +338,9 @@ if st.query_params.get("view") == "smartcash":
         <span class="sc-section-label">Comisiones por Supervisor</span>
     </div>""", unsafe_allow_html=True)
 
-    SUELDO_BASE = 1300
-    MOVILIDAD = 300
-    TASA_SUP = 0.0006  # 0.06%
+    st.caption("Incluye a todos los supervisores configurados para el mes, incluso con cero desembolsos.")
 
-    if not desemb_sc.empty and 'SUPERVISOR' in desemb_sc.columns:
-        sup_group = desemb_sc.groupby('SUPERVISOR').agg(
-            Q_Desembolsos=('MAF_NUM', 'count'),
-            Desembolsos=('MAF_NUM', 'sum')
-        ).reset_index().sort_values('Desembolsos', ascending=False)
-        sup_group = sup_group.rename(columns={'SUPERVISOR': 'Nombre de Supervisor'})
-        sup_group['Sueldo Base'] = SUELDO_BASE
-        sup_group['Movilidad'] = MOVILIDAD
-        sup_group['Comisión'] = (sup_group['Desembolsos'] * TASA_SUP).round(2)
-        sup_group['Total'] = sup_group['Comisión'] + sup_group['Sueldo Base'] + sup_group['Movilidad']
-
+    if not sup_group.empty:
         # Fila TOTAL
         total_row_sup = pd.DataFrame([{
             'Nombre de Supervisor': 'TOTAL',
@@ -307,10 +352,6 @@ if st.query_params.get("view") == "smartcash":
             'Total': sup_group['Total'].sum(),
         }])
         sup_display = pd.concat([sup_group, total_row_sup], ignore_index=True)
-
-        def style_total(row):
-            is_total = any(str(val).upper() == 'TOTAL' for val in row.values)
-            return ['background-color: #FFEDD5; font-weight: 700;' if is_total else '' for _ in row]
 
         st.dataframe(
             sup_display.style.apply(style_total, axis=1),
@@ -327,7 +368,7 @@ if st.query_params.get("view") == "smartcash":
         )
         st.markdown(sc_download_link(sup_display, f"SmartCash_Supervisores_{selected_mes_sc}.xlsx", "Exportar Supervisores"), unsafe_allow_html=True)
     else:
-        st.info("No hay operaciones desembolsadas en este mes para supervisores.")
+        st.info("No hay supervisores configurados para este mes.")
 
     # ================================================================
     # TABLA 2: EJECUTIVOS
@@ -337,16 +378,7 @@ if st.query_params.get("view") == "smartcash":
         <span class="sc-section-label">Comisiones por Ejecutivo</span>
     </div>""", unsafe_allow_html=True)
 
-    TASA_EJE = 0.0065  # 0.65%
-
-    if not desemb_sc.empty and 'EJECUTIVO' in desemb_sc.columns:
-        eje_group = desemb_sc.groupby('EJECUTIVO').agg(
-            Q_Desembolsos=('MAF_NUM', 'count'),
-            Desembolsos=('MAF_NUM', 'sum')
-        ).reset_index().sort_values('Desembolsos', ascending=False)
-        eje_group = eje_group.rename(columns={'EJECUTIVO': 'Nombre de Ejecutivo'})
-        eje_group['Comisión'] = (eje_group['Desembolsos'] * TASA_EJE).round(2)
-
+    if not eje_group.empty:
         # Fila TOTAL
         total_row_eje = pd.DataFrame([{
             'Nombre de Ejecutivo': 'TOTAL',
@@ -368,7 +400,7 @@ if st.query_params.get("view") == "smartcash":
         )
         st.markdown(sc_download_link(eje_display, f"SmartCash_Ejecutivos_{selected_mes_sc}.xlsx", "Exportar Ejecutivos"), unsafe_allow_html=True)
     else:
-        st.info("No hay operaciones desembolsadas en este mes para ejecutivos.")
+        st.info("No hay ejecutivos registrados para este mes.")
 
     st.stop()
 
@@ -548,6 +580,9 @@ ESTADO_COLORS = {
 }
 
 REGION_COLORS = {'LIMA': '#1A4FA0', 'NORTE': '#E67212', 'SUR': '#7C5CBF', 'OTROS': '#2B7DE9'}
+
+if st.query_params.get("view") == "smartcash":
+    render_smartcash()
 
 # --- PAGE CONFIG ---
 st.set_page_config(
@@ -778,29 +813,31 @@ def _load_excel_multisheet(url):
     all_dfs = []
     sheet_names = []
     try:
-        res = requests.get(url)
-        if res.status_code == 200:
-            xls = pd.ExcelFile(BytesIO(res.content))
-            sheet_names = xls.sheet_names
-            for sheet in sheet_names:
-                df_raw = pd.read_excel(xls, sheet_name=sheet, header=None)
-                header_idx = -1
-                for idx, row in df_raw.iterrows():
-                    if row.astype(str).str.contains('PLAZA DE VENTA', na=False, case=False).any():
-                        header_idx = idx
-                        break
-                if header_idx != -1:
-                    df_raw.columns = df_raw.iloc[header_idx]
-                    df_sheet = df_raw.iloc[header_idx + 1:].copy()
-                    df_sheet = df_sheet.loc[:, df_sheet.columns.notna()]
-                    df_sheet = df_sheet.dropna(how='all')
-                    if not df_sheet.empty:
-                        # Normalizar nombres de columnas (p. ej. 'Columna 10' a 'MAF NETO')
-                        df_sheet.columns = [str(c).strip() for c in df_sheet.columns]
-                        if 'Columna 10' in df_sheet.columns:
-                            df_sheet = df_sheet.rename(columns={'Columna 10': 'MAF NETO'})
-                        df_sheet['SUPERVISOR'] = sheet
-                        all_dfs.append(df_sheet)
+        res = requests.get(url, timeout=30)
+        res.raise_for_status()
+        xls = pd.ExcelFile(BytesIO(res.content))
+        sheet_names = xls.sheet_names
+        for sheet in sheet_names:
+            if str(sheet).strip().upper() == 'CONSOLIDADO':
+                continue
+            df_raw = pd.read_excel(xls, sheet_name=sheet, header=None)
+            header_idx = -1
+            for idx, row in df_raw.iterrows():
+                if row.astype(str).str.contains('PLAZA DE VENTA', na=False, case=False).any():
+                    header_idx = idx
+                    break
+            if header_idx != -1:
+                df_raw.columns = df_raw.iloc[header_idx]
+                df_sheet = df_raw.iloc[header_idx + 1:].copy()
+                df_sheet = df_sheet.loc[:, df_sheet.columns.notna()]
+                df_sheet = df_sheet.dropna(how='all')
+                if not df_sheet.empty:
+                    # Normalizar nombres de columnas (p. ej. 'Columna 10' a 'MAF NETO')
+                    df_sheet.columns = [str(c).strip() for c in df_sheet.columns]
+                    if 'Columna 10' in df_sheet.columns:
+                        df_sheet = df_sheet.rename(columns={'Columna 10': 'MAF NETO'})
+                    df_sheet['SUPERVISOR'] = sheet
+                    all_dfs.append(df_sheet)
     except Exception as e:
         st.error(f"Error técnico cargando Excel: {e}")
     df_result = pd.concat(all_dfs, ignore_index=True) if all_dfs else pd.DataFrame()
@@ -820,7 +857,9 @@ def load_data():
     for mes, config in MESES_CONFIG.items():
         try:
             if config['format'] == 'csv':
-                df_mes = pd.read_csv(config['url'])
+                res = requests.get(config['url'], timeout=30)
+                res.raise_for_status()
+                df_mes = pd.read_csv(BytesIO(res.content))
                 debug_info[mes] = {'cargado': not df_mes.empty, 'registros': len(df_mes)}
             elif config['format'] == 'excel_multisheet':
                 df_mes, sheets = _load_excel_multisheet(config['url'])
