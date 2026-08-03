@@ -138,6 +138,20 @@ MESES_CONFIG = {
             'WINNIE ESCALANTE': 2_000_000,
         }
     },
+    'AGOSTO': {
+        'url': 'https://docs.google.com/spreadsheets/d/1RqBppmGusi7RrxsVMl7yqn3Vh2UyYhssS3oKZlaT2wk/export?format=xlsx',
+        'format': 'excel_multisheet',
+        'metas': {
+            'NAHOMI DIAZ': 1_000_000, 'JHON ZAMORA': 1_000_000, 'OMAR MINAYA': 1_000_000,
+            'ANGIE SILVERA': 2_000_000, 'LUIS CHUSE': 2_000_000, 'NATHALIE ARANDA': 500_000,
+            'JIMMY COLLAZOS': 800_000, 'KENNY MORALES': 1_000_000, 'WINNIE ESCALANTE': 2_000_000,
+            'JOSE LUIS QUINTEROS': 1_000_000, 'MARIELLA PAÑAHUA': 800_000,
+            'ALEXANDRA GUZMAN': 1_000_000, 'WENDY IPANEQUE': 1_000_000,
+            'AMALIA QUINDE': 1_000_000, 'THALIA SALOME': 1_000_000,
+            'VIOLETA LLERENA': 1_000_000, 'ARACELY VENTURA': 1_000_000,
+            'MILUSKA LINARES': 1_000_000, 'WINNIE': 2_000_000
+        }
+    },
 }
 
 SUPERVISORES_EXCLUIDOS_POR_MES = {
