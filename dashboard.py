@@ -31,6 +31,347 @@ if st.query_params.get("view") == "cotizador":
         st.error("No se encontró el archivo de cotización.")
     st.stop()
 
+# --- CONFIGURACIÓN DE VISTA (SMARTCASH) ---
+if st.query_params.get("view") == "smartcash":
+    st.set_page_config(layout="wide", page_title="SmartCash - Comisiones")
+    st.markdown("""
+        <style>
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap');
+        html, body, [class*="css"] { font-family: 'Manrope', sans-serif !important; }
+        #MainMenu, footer, header { visibility: hidden; }
+        section[data-testid="stSidebar"],
+        div[data-testid="stSidebar"],
+        [data-testid="collapsedControl"],
+        [data-testid="stSidebarCollapsedControl"] {
+            display: none !important;
+        }
+        .block-container { padding-top: 0 !important; padding-bottom: 1rem !important; max-width: 1400px; }
+        .sc-topbar { display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid #DDDDE5; margin-bottom:20px; }
+        .sc-topbar-left { display:flex; align-items:center; gap:14px; }
+        .sc-topbar-title { font-size:13px; font-weight:600; color:#7B7B8A; letter-spacing:0.5px; text-transform:uppercase; }
+        .sc-topbar-right { display:flex; align-items:center; gap:10px; }
+        .sc-back-button {
+            display: inline-flex !important; align-items: center !important; justify-content: center !important;
+            padding: 6px 14px !important; background-color: #1A4FA0 !important; color: #FFFFFF !important;
+            border-radius: 6px !important; text-decoration: none !important; font-size: 11px !important;
+            font-weight: 700 !important; transition: all 0.3s ease !important; border: 1px solid #1A4FA0 !important;
+            text-transform: uppercase !important; letter-spacing: 0.3px !important; line-height: 1 !important;
+        }
+        .sc-back-button:hover {
+            background-color: #E67212 !important; border-color: #E67212 !important; color: #FFFFFF !important;
+            transform: translateY(-1px); box-shadow: 0 4px 8px rgba(230, 114, 18, 0.3) !important;
+        }
+        .sc-section-header { display:flex; align-items:center; gap:8px; margin:28px 0 14px 0; padding-bottom:6px; border-bottom:2px solid #1A4FA0; }
+        .sc-section-icon { width:20px; height:20px; border-radius:4px; background:#E67212; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+        .sc-section-icon svg { width:12px; height:12px; fill:white; }
+        .sc-section-label { font-size:13px; font-weight:700; color:#1A4FA0; text-transform:uppercase; letter-spacing:0.4px; }
+        .sc-kpi-row { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:14px; margin-bottom:24px; }
+        .sc-kpi-card { background:#FFFFFF; border:1px solid #DDDDE5; border-radius:10px; padding:20px 22px; }
+        .sc-kpi-label { font-size:10px; font-weight:700; color:#7B7B8A; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:8px; }
+        .sc-kpi-value { font-size:26px; font-weight:800; color:#1C1C1E; letter-spacing:-0.5px; }
+        .sc-kpi-value-accent { font-size:26px; font-weight:800; color:#E67212; letter-spacing:-0.5px; }
+        .sc-kpi-sub { font-size:11px; color:#7B7B8A; margin-top:4px; }
+        h1,h2,h3,h4 { font-weight:700 !important; color:#1A4FA0 !important; }
+        div[data-testid="stDataFrame"] { border:1px solid #DDDDE5; border-radius:10px; overflow:hidden; }
+        .export-button {
+            display: inline-flex; align-items: center; justify-content: center; padding: 7px 15px;
+            background-color: #FFFFFF; color: #1A4FA0 !important; border: 1px solid #1A4FA0;
+            border-radius: 8px; text-decoration: none !important; font-size: 12px; font-weight: 700;
+            margin-top: 12px; margin-bottom: 12px; transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 0.3px;
+        }
+        .export-button:hover {
+            background-color: #1A4FA0; color: #FFFFFF !important;
+            box-shadow: 0 4px 8px rgba(26, 79, 160, 0.2); transform: translateY(-1px);
+        }
+        @media (max-width: 768px) {
+            .sc-kpi-row { grid-template-columns: 1fr !important; gap: 12px !important; }
+            .sc-topbar { display: grid !important; grid-template-columns: 1fr !important; gap: 10px !important; }
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # --- Funciones auxiliares para SmartCash ---
+    def sc_to_excel(df_export):
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            df_export.to_excel(writer, index=False, sheet_name='Sheet1')
+        return output.getvalue()
+
+    def sc_download_link(df_export, filename, label):
+        data = sc_to_excel(df_export)
+        b64 = base64.b64encode(data).decode()
+        href = f'data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64}'
+        icon_svg = """<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/></svg>"""
+        return f'<a href="{href}" download="{filename}" class="export-button">{icon_svg}&nbsp;&nbsp;{label}</a>'
+
+    # --- Carga de datos (reutiliza la misma lógica) ---
+    ESTADO_MAPPING_SC = {
+        'EVALUACIÓN BCP': 'EN EVALUACION BCP', 'EVALUACION BCP': 'EN EVALUACION BCP',
+        'PENDIENTE DE BACKOFFICE': 'PENDIENTE DE BACK OFFICE', 'PENDIENTE DE BACK': 'PENDIENTE DE BACK OFFICE',
+        'OBS BACKOFFICE': 'OBSERVADO BACK', 'OBS BCP': 'OBSERVADO FFVV',
+        'RECHAZADO': 'RECHAZADA', 'APROBADA': 'APROBADA', 'DESEMBOLSADO': 'DESEMBOLSADO',
+        'PENDIENTE DE DOCUMENTAR': 'PENDIENTE DE DOCUMENTAR', 'PENDIENTE DE REMESA': 'PENDIENTE DE REMESA'
+    }
+
+    def sc_load_excel_multisheet(url):
+        all_dfs = []
+        try:
+            res = requests.get(url)
+            if res.status_code == 200:
+                xls = pd.ExcelFile(BytesIO(res.content))
+                for sheet in xls.sheet_names:
+                    if sheet == 'CONSOLIDADO':
+                        continue
+                    df_raw = pd.read_excel(xls, sheet_name=sheet, header=None)
+                    header_idx = -1
+                    for idx, row in df_raw.iterrows():
+                        if row.astype(str).str.contains('PLAZA DE VENTA', na=False, case=False).any():
+                            header_idx = idx
+                            break
+                    if header_idx != -1:
+                        df_raw.columns = df_raw.iloc[header_idx]
+                        df_sheet = df_raw.iloc[header_idx + 1:].copy()
+                        df_sheet = df_sheet.loc[:, df_sheet.columns.notna()]
+                        df_sheet = df_sheet.dropna(how='all')
+                        if not df_sheet.empty:
+                            df_sheet.columns = [str(c).strip() for c in df_sheet.columns]
+                            if 'Columna 10' in df_sheet.columns:
+                                df_sheet = df_sheet.rename(columns={'Columna 10': 'MAF NETO'})
+                            df_sheet['SUPERVISOR'] = sheet
+                            all_dfs.append(df_sheet)
+        except Exception as e:
+            st.error(f"Error cargando datos: {e}")
+        return pd.concat(all_dfs, ignore_index=True) if all_dfs else pd.DataFrame()
+
+    def sc_clean_maf(val):
+        if pd.isna(val): return 0.0
+        if isinstance(val, (int, float)): return float(val)
+        s = str(val).replace('S/', '').replace(' ', '').strip()
+        if not s: return 0.0
+        if ',' in s and '.' in s:
+            if s.rfind('.') < s.rfind(','): s = s.replace('.', '').replace(',', '.')
+            else: s = s.replace(',', '')
+        elif ',' in s:
+            parts = s.split(',')
+            if len(parts[-1]) == 3: s = s.replace(',', '')
+            else: s = s.replace(',', '.')
+        try: return float(s)
+        except ValueError: return 0.0
+
+    @st.cache_data(ttl=60)
+    def sc_load_month(mes_key):
+        config = MESES_CONFIG.get(mes_key)
+        if not config:
+            return pd.DataFrame()
+        if config['format'] == 'csv':
+            try:
+                df = pd.read_csv(config['url'])
+            except Exception:
+                return pd.DataFrame()
+        elif config['format'] == 'excel_multisheet':
+            df = sc_load_excel_multisheet(config['url'])
+        else:
+            return pd.DataFrame()
+        if df.empty:
+            return df
+        # Normalizar
+        if 'MAF NETO' in df.columns:
+            df['MAF_NUM'] = df['MAF NETO'].apply(sc_clean_maf)
+        else:
+            df['MAF_NUM'] = 0.0
+        df['SUPERVISOR'] = df['SUPERVISOR'].fillna('SIN SUPERVISOR').astype(str).str.strip().str.upper()
+        if 'EJECUTIVO' in df.columns:
+            df['EJECUTIVO'] = df['EJECUTIVO'].fillna('SIN ASIGNAR').astype(str).str.strip().str.upper()
+        # Normalizar ESTADO
+        estado_col = None
+        if 'ESTADO LIMPIO' in df.columns: estado_col = 'ESTADO LIMPIO'
+        elif 'ESTADO' in df.columns: estado_col = 'ESTADO'
+        if estado_col:
+            df['ESTADO_NORM'] = df[estado_col].astype(str).str.strip().str.upper().map(lambda x: ESTADO_MAPPING_SC.get(x, x))
+        else:
+            df['ESTADO_NORM'] = 'SIN ESTADO'
+        return df
+
+    # --- Logo ---
+    def sc_get_b64(path):
+        try:
+            with open(path, "rb") as f:
+                return base64.b64encode(f.read()).decode()
+        except FileNotFoundError:
+            return None
+    sc_logo_b64 = sc_get_b64("A366BCP.png")
+    sc_logo_html = f'<img src="data:image/png;base64,{sc_logo_b64}" style="height:44px;" alt="Logo A365 BCP">' if sc_logo_b64 else '<span style="font-weight:800;font-size:22px;color:#1A4FA0;">A365 BCP</span>'
+
+    # --- Topbar ---
+    st.markdown(f"""
+    <div class="sc-topbar">
+        <div class="sc-topbar-left">{sc_logo_html}<span class="sc-topbar-title">SmartCash — Comisiones</span></div>
+        <div class="sc-topbar-right">
+            <a href="/" target="_self" class="sc-back-button">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="white" style="margin-right:6px;"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+                Volver al Dashboard
+            </a>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # --- Selector de mes ---
+    MESES_ORDEN_SC = [
+        'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
+        'JULIO', 'AGOSTO', 'SETIEMBRE', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'
+    ]
+    meses_disponibles = [m for m in MESES_ORDEN_SC if m in MESES_CONFIG]
+    # Mes por defecto: el actual o el último disponible
+    try:
+        mes_numero = datetime.now(ZoneInfo("America/Lima")).month
+    except Exception:
+        mes_numero = datetime.now().month
+    meses_actuales_map = {
+        1: 'ENERO', 2: 'FEBRERO', 3: 'MARZO', 4: 'ABRIL', 5: 'MAYO', 6: 'JUNIO',
+        7: 'JULIO', 8: 'AGOSTO', 9: 'SETIEMBRE', 10: 'OCTUBRE', 11: 'NOVIEMBRE', 12: 'DICIEMBRE'
+    }
+    mes_default = meses_actuales_map.get(mes_numero, 'AGOSTO')
+    if mes_default not in meses_disponibles:
+        mes_default = meses_disponibles[-1] if meses_disponibles else 'AGOSTO'
+    default_idx = meses_disponibles.index(mes_default) if mes_default in meses_disponibles else 0
+
+    selected_mes_sc = st.selectbox("📅 Seleccionar Mes", meses_disponibles, index=default_idx, key="sc_mes")
+
+    with st.spinner('Cargando datos...'):
+        df_sc = sc_load_month(selected_mes_sc)
+
+    if df_sc.empty:
+        st.warning(f"No se encontraron datos para el mes de {selected_mes_sc}.")
+        st.stop()
+
+    # Filtrar solo DESEMBOLSADO
+    desemb_sc = df_sc[df_sc['ESTADO_NORM'] == 'DESEMBOLSADO'].copy()
+
+    # --- KPIs rápidos ---
+    total_desemb = desemb_sc['MAF_NUM'].sum()
+    total_ops = len(desemb_sc)
+    total_comision_sup = total_desemb * 0.0006
+    total_comision_eje = total_desemb * 0.0065
+
+    st.markdown(f"""
+    <div class="sc-kpi-row">
+        <div class="sc-kpi-card">
+            <div class="sc-kpi-label">Desembolso Total ({selected_mes_sc})</div>
+            <div class="sc-kpi-value">S/ {total_desemb:,.2f}</div>
+            <div class="sc-kpi-sub">{total_ops} operaciones desembolsadas</div>
+        </div>
+        <div class="sc-kpi-card">
+            <div class="sc-kpi-label">Comisiones Supervisores</div>
+            <div class="sc-kpi-value-accent">S/ {total_comision_sup:,.2f}</div>
+            <div class="sc-kpi-sub">Tasa: 0.06% sobre desembolso</div>
+        </div>
+        <div class="sc-kpi-card">
+            <div class="sc-kpi-label">Comisiones Ejecutivos</div>
+            <div class="sc-kpi-value-accent">S/ {total_comision_eje:,.2f}</div>
+            <div class="sc-kpi-sub">Tasa: 0.65% sobre desembolso</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ================================================================
+    # TABLA 1: SUPERVISORES
+    # ================================================================
+    st.markdown("""<div class="sc-section-header">
+        <div class="sc-section-icon"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>
+        <span class="sc-section-label">Comisiones por Supervisor</span>
+    </div>""", unsafe_allow_html=True)
+
+    SUELDO_BASE = 1300
+    MOVILIDAD = 300
+    TASA_SUP = 0.0006  # 0.06%
+
+    if not desemb_sc.empty and 'SUPERVISOR' in desemb_sc.columns:
+        sup_group = desemb_sc.groupby('SUPERVISOR').agg(
+            Q_Desembolsos=('MAF_NUM', 'count'),
+            Desembolsos=('MAF_NUM', 'sum')
+        ).reset_index().sort_values('Desembolsos', ascending=False)
+        sup_group = sup_group.rename(columns={'SUPERVISOR': 'Nombre de Supervisor'})
+        sup_group['Sueldo Base'] = SUELDO_BASE
+        sup_group['Movilidad'] = MOVILIDAD
+        sup_group['Comisión'] = (sup_group['Desembolsos'] * TASA_SUP).round(2)
+        sup_group['Total'] = sup_group['Comisión'] + sup_group['Sueldo Base'] + sup_group['Movilidad']
+
+        # Fila TOTAL
+        total_row_sup = pd.DataFrame([{
+            'Nombre de Supervisor': 'TOTAL',
+            'Q_Desembolsos': sup_group['Q_Desembolsos'].sum(),
+            'Desembolsos': sup_group['Desembolsos'].sum(),
+            'Sueldo Base': sup_group['Sueldo Base'].sum(),
+            'Movilidad': sup_group['Movilidad'].sum(),
+            'Comisión': sup_group['Comisión'].sum(),
+            'Total': sup_group['Total'].sum(),
+        }])
+        sup_display = pd.concat([sup_group, total_row_sup], ignore_index=True)
+
+        def style_total(row):
+            is_total = any(str(val).upper() == 'TOTAL' for val in row.values)
+            return ['background-color: #FFEDD5; font-weight: 700;' if is_total else '' for _ in row]
+
+        st.dataframe(
+            sup_display.style.apply(style_total, axis=1),
+            width='stretch', hide_index=True,
+            column_config={
+                'Nombre de Supervisor': st.column_config.TextColumn('Nombre de Supervisor'),
+                'Q_Desembolsos': st.column_config.NumberColumn('Q Desembolsos', format='%,.0f'),
+                'Desembolsos': st.column_config.NumberColumn('Desembolsos', format='S/ %,.2f'),
+                'Sueldo Base': st.column_config.NumberColumn('Sueldo Base', format='S/ %,.0f'),
+                'Movilidad': st.column_config.NumberColumn('Movilidad', format='S/ %,.0f'),
+                'Comisión': st.column_config.NumberColumn('Comisión', format='S/ %,.2f'),
+                'Total': st.column_config.NumberColumn('Total', format='S/ %,.2f'),
+            }
+        )
+        st.markdown(sc_download_link(sup_display, f"SmartCash_Supervisores_{selected_mes_sc}.xlsx", "Exportar Supervisores"), unsafe_allow_html=True)
+    else:
+        st.info("No hay operaciones desembolsadas en este mes para supervisores.")
+
+    # ================================================================
+    # TABLA 2: EJECUTIVOS
+    # ================================================================
+    st.markdown("""<div class="sc-section-header">
+        <div class="sc-section-icon"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>
+        <span class="sc-section-label">Comisiones por Ejecutivo</span>
+    </div>""", unsafe_allow_html=True)
+
+    TASA_EJE = 0.0065  # 0.65%
+
+    if not desemb_sc.empty and 'EJECUTIVO' in desemb_sc.columns:
+        eje_group = desemb_sc.groupby('EJECUTIVO').agg(
+            Q_Desembolsos=('MAF_NUM', 'count'),
+            Desembolsos=('MAF_NUM', 'sum')
+        ).reset_index().sort_values('Desembolsos', ascending=False)
+        eje_group = eje_group.rename(columns={'EJECUTIVO': 'Nombre de Ejecutivo'})
+        eje_group['Comisión'] = (eje_group['Desembolsos'] * TASA_EJE).round(2)
+
+        # Fila TOTAL
+        total_row_eje = pd.DataFrame([{
+            'Nombre de Ejecutivo': 'TOTAL',
+            'Q_Desembolsos': eje_group['Q_Desembolsos'].sum(),
+            'Desembolsos': eje_group['Desembolsos'].sum(),
+            'Comisión': eje_group['Comisión'].sum(),
+        }])
+        eje_display = pd.concat([eje_group, total_row_eje], ignore_index=True)
+
+        st.dataframe(
+            eje_display.style.apply(style_total, axis=1),
+            width='stretch', hide_index=True,
+            column_config={
+                'Nombre de Ejecutivo': st.column_config.TextColumn('Nombre de Ejecutivo'),
+                'Q_Desembolsos': st.column_config.NumberColumn('Q Desembolsos', format='%,.0f'),
+                'Desembolsos': st.column_config.NumberColumn('Desembolsos', format='S/ %,.2f'),
+                'Comisión': st.column_config.NumberColumn('Comisión', format='S/ %,.2f'),
+            }
+        )
+        st.markdown(sc_download_link(eje_display, f"SmartCash_Ejecutivos_{selected_mes_sc}.xlsx", "Exportar Ejecutivos"), unsafe_allow_html=True)
+    else:
+        st.info("No hay operaciones desembolsadas en este mes para ejecutivos.")
+
+    st.stop()
+
 # --- HELPER EXCEL ---
 def to_excel(df):
     output = BytesIO()
@@ -410,6 +751,10 @@ st.markdown(f"""
         <a href="{href_html}" target="_blank" class="topbar-button">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="white" style="margin-right:6px;"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
             Abrir Cotizador
+        </a>
+        <a href="/?view=smartcash" target="_blank" class="topbar-button" style="background-color:#2D9A3F !important; border-color:#2D9A3F !important;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="white" style="margin-right:6px;"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+            SmartCash
         </a>
         <span class="topbar-update">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="#7B7B8A"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 11h-2V7h2zm0 4h-2v-2h2z"/></svg>
