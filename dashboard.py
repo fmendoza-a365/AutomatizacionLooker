@@ -444,10 +444,12 @@ ZONAS_MAP = {
     'THALIA SALOME': 'HUANCAYO',                                                # JULIO - Nuevo
     'MILUSKA LINARES': 'TRUJILLO',                                              # JULIO - Nuevo
     'ARACELY VENTURA': 'CHICLAYO',                                              # JULIO - Nuevo
-    'WINNIE ESCALANTE': 'LIMA'                                                  # JULIO - Nuevo
+    'WINNIE ESCALANTE': 'LIMA',                                                 # JULIO - Nuevo
+    'JOSUE CENTENO': 'HUANCAYO',                                                 # JULIO - Nuevo (Agosto update)
+    'ELIZABETH ESQUIVEL': 'LIMA',                                                # AGOSTO - Nuevo (confirmar zona)
 }
 NORTE = ['CHICLAYO', 'PIURA', 'TRUJILLO']
-SUR = ['AREQUIPA']
+SUR = ['AREQUIPA', 'HUANCAYO']
 
 # --- CONFIGURACIÓN POR MES (URL + Formato + Metas) ---
 MESES_CONFIG = {
@@ -509,6 +511,7 @@ MESES_CONFIG = {
             'MILUSKA LINARES': 1_000_000,
             'ARACELY VENTURA': 1_000_000,
             'WINNIE ESCALANTE': 2_000_000,
+            'JOSUE CENTENO': 1_000_000,
         }
     },
     'AGOSTO': {
@@ -522,7 +525,8 @@ MESES_CONFIG = {
             'ALEXANDRA GUZMAN': 1_000_000, 'WENDY IPANEQUE': 1_000_000,
             'AMALIA QUINDE': 1_000_000, 'THALIA SALOME': 1_000_000,
             'VIOLETA LLERENA': 1_000_000, 'ARACELY VENTURA': 1_000_000,
-            'MILUSKA LINARES': 1_000_000, 'WINNIE': 2_000_000
+            'MILUSKA LINARES': 1_000_000, 'WINNIE': 2_000_000,
+            'JOSUE CENTENO': 1_000_000, 'ELIZABETH ESQUIVEL': 1_000_000,
         }
     },
 }
