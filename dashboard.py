@@ -453,6 +453,22 @@ ZONAS_MAP = {
 NORTE = ['CHICLAYO', 'PIURA', 'TRUJILLO']
 SUR = ['AREQUIPA', 'HUANCAYO']
 
+# Zonas de gestión vigentes por mes. La plaza física se conserva aparte para
+# que Tarapoto, Ayacucho, Huancayo y las demás plazas no pierdan su identidad.
+ZONAS_GESTION_POR_MES = {
+    'AGOSTO': {
+        'JIMMY COLLAZOS': 'LIMA 1',
+        'ANGIE SILVERA': 'LIMA 1',
+        'KENNY MORALES': 'LIMA 1',
+        'MARIELLA PAÑAHUA': 'LIMA 1',
+        'WINNIE ESCALANTE': 'LIMA 1',
+        'JOSE LUIS QUINTEROS': 'LIMA 1',
+        'THALIA SALOME': 'LIMA 1',
+        'LUIS CHUSE': 'LIMA 2',
+        'NATHALIE ARANDA': 'LIMA 2',
+    },
+}
+
 # Reclasificaciones de gestión para la tabla "Por Plaza". Estas reglas son
 # deliberadamente mensuales para no modificar la lectura histórica.
 PLAZAS_REPORTE_POR_MES = {
@@ -473,6 +489,24 @@ PLAZAS_REPORTE_ORDEN = [
     'LIMA 1', 'LIMA 2', 'LIMA', 'NORTE', 'TARAPOTO', 'AYACUCHO',
     'AREQUIPA', 'HUANCAYO', 'SUR', 'OTROS',
 ]
+
+
+def get_zona_gestion(supervisor, mes):
+    """Devuelve la zona de gestión sin reemplazar la plaza física."""
+    supervisor_key = str(supervisor).upper().strip()
+    mes_key = str(mes).upper().strip()
+    override = ZONAS_GESTION_POR_MES.get(mes_key, {}).get(supervisor_key)
+    return override or ZONAS_MAP.get(supervisor_key, 'N/A')
+
+
+def get_zona_gestion_periodo(supervisor, meses_activos):
+    """Resume las zonas de un supervisor cuando se consultan varios meses."""
+    zonas = []
+    for mes in ordenar_meses(meses_activos):
+        zona = get_zona_gestion(supervisor, mes)
+        if zona not in zonas:
+            zonas.append(zona)
+    return ' / '.join(zonas) if zonas else 'N/A'
 
 
 def get_plaza_reporte(supervisor, mes):
@@ -981,8 +1015,15 @@ def load_data():
             df['ESTADO LIMPIO'] = df['ESTADO LIMPIO'].fillna(df['ESTADO'])
             df = df.drop(columns=['ESTADO'])
 
-    df['ZONA_SUP'] = df['SUPERVISOR'].map(ZONAS_MAP).fillna('N/A')
-    df['REGION'] = df['ZONA_SUP'].apply(lambda z: 'LIMA' if z == 'LIMA' else ('NORTE' if z in NORTE else ('SUR' if z in SUR else 'OTROS')))
+    # Zona de gestión y región geográfica son dimensiones distintas.
+    df['ZONA_SUP'] = df.apply(
+        lambda row: get_zona_gestion(row['SUPERVISOR'], row['MES']),
+        axis=1,
+    )
+    plaza_supervisor = df['SUPERVISOR'].map(ZONAS_MAP).fillna('N/A')
+    df['REGION'] = plaza_supervisor.apply(
+        lambda z: 'LIMA' if z == 'LIMA' else ('NORTE' if z in NORTE else ('SUR' if z in SUR else 'OTROS'))
+    )
     return df
 
 with st.spinner('Conectando...'):
@@ -1240,7 +1281,7 @@ def build_matrix(data, group_col, meses_activos):
         ps = ps.reindex(full_index, fill_value=0)
         pc = pc.reindex(full_index, fill_value=0)
         res = pd.DataFrame(index=ps.index)
-        res['ZONA'] = [ZONAS_MAP.get(s, 'N/A') for s in res.index]
+        res['ZONA'] = [get_zona_gestion_periodo(s, meses_activos) for s in res.index]
     else:
         if data.empty: return pd.DataFrame()
         ps = data.pivot_table(index=group_col, columns='ESTADO LIMPIO', values='MAF NETO_Num', aggfunc='sum', fill_value=0)
