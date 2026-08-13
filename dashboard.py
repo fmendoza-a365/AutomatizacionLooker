@@ -446,10 +446,51 @@ ZONAS_MAP = {
     'ARACELY VENTURA': 'CHICLAYO',                                              # JULIO - Nuevo
     'WINNIE ESCALANTE': 'LIMA',                                                 # JULIO - Nuevo
     'JOSUE CENTENO': 'HUANCAYO',                                                 # JULIO - Nuevo (Agosto update)
-    'ELIZABETH ESQUIVEL': 'LIMA',                                                # AGOSTO - Nuevo (confirmar zona)
+    'ELIZABETH ESQUIVEL': 'TRUJILLO',                                           # AGOSTO - Actualizado según OPI
+    'ANA ALIAGA': 'LIMA',                                                       # AGOSTO - Nuevo
+    'MERCEDES GIRALDO': 'LIMA',                                                 # AGOSTO - Nuevo
 }
 NORTE = ['CHICLAYO', 'PIURA', 'TRUJILLO']
 SUR = ['AREQUIPA', 'HUANCAYO']
+
+# Reclasificaciones de gestión para la tabla "Por Plaza". Estas reglas son
+# deliberadamente mensuales para no modificar la lectura histórica.
+PLAZAS_REPORTE_POR_MES = {
+    'AGOSTO': {
+        'ANGIE SILVERA': 'LIMA 1',
+        'KENNY MORALES': 'LIMA 1',
+        'WINNIE ESCALANTE': 'LIMA 1',
+        'JOSE LUIS QUINTEROS': 'LIMA 1',
+        'LUIS CHUSE': 'LIMA 2',
+        'NATHALIE ARANDA': 'LIMA 2',
+        'JIMMY COLLAZOS': 'TARAPOTO',
+        'MARIELLA PAÑAHUA': 'AYACUCHO',
+        'THALIA SALOME': 'HUANCAYO',
+    },
+}
+
+PLAZAS_REPORTE_ORDEN = [
+    'LIMA 1', 'LIMA 2', 'LIMA', 'NORTE', 'TARAPOTO', 'AYACUCHO',
+    'AREQUIPA', 'HUANCAYO', 'SUR', 'OTROS',
+]
+
+
+def get_plaza_reporte(supervisor, mes):
+    """Devuelve la plaza de gestión respetando las reglas vigentes por mes."""
+    supervisor_key = str(supervisor).upper().strip()
+    mes_key = str(mes).upper().strip()
+    override = PLAZAS_REPORTE_POR_MES.get(mes_key, {}).get(supervisor_key)
+    if override:
+        return override
+
+    zona = ZONAS_MAP.get(supervisor_key, 'OTROS')
+    if zona == 'LIMA':
+        return 'LIMA'
+    if zona in NORTE:
+        return 'NORTE'
+    if zona in SUR:
+        return 'SUR'
+    return 'OTROS'
 
 # --- CONFIGURACIÓN POR MES (URL + Formato + Metas) ---
 MESES_CONFIG = {
@@ -526,7 +567,8 @@ MESES_CONFIG = {
             'AMALIA QUINDE': 1_000_000, 'THALIA SALOME': 1_000_000,
             'VIOLETA LLERENA': 1_000_000, 'ARACELY VENTURA': 1_000_000,
             'MILUSKA LINARES': 1_000_000, 'WINNIE': 2_000_000,
-            'JOSUE CENTENO': 1_000_000, 'ELIZABETH ESQUIVEL': 1_000_000,
+            'ELIZABETH ESQUIVEL': 1_000_000, 'ANA ALIAGA': 1_000_000,
+            'MERCEDES GIRALDO': 2_000_000,
         }
     },
 }
@@ -1203,7 +1245,16 @@ def build_matrix(data, group_col, meses_activos):
         if data.empty: return pd.DataFrame()
         ps = data.pivot_table(index=group_col, columns='ESTADO LIMPIO', values='MAF NETO_Num', aggfunc='sum', fill_value=0)
         pc = data.pivot_table(index=group_col, columns='ESTADO LIMPIO', values='MAF NETO_Num', aggfunc='count', fill_value=0)
-        full_index = ['LIMA', 'NORTE', 'SUR', 'OTROS']
+        plazas_en_datos = set(data[group_col].dropna().unique())
+        plazas_con_meta = {
+            get_plaza_reporte(supervisor, mes)
+            for mes in meses_activos
+            for supervisor in MESES_CONFIG.get(mes, {}).get('metas', {})
+            if supervisor != 'WINNIE'
+        }
+        plazas_presentes = plazas_en_datos | plazas_con_meta
+        full_index = [p for p in PLAZAS_REPORTE_ORDEN if p in plazas_presentes]
+        full_index += sorted(plazas_presentes - set(full_index))
         ps = ps.reindex(full_index, fill_value=0)
         pc = pc.reindex(full_index, fill_value=0)
         res = pd.DataFrame(index=ps.index)
@@ -1219,14 +1270,13 @@ def build_matrix(data, group_col, meses_activos):
     if group_col == 'SUPERVISOR':
         res['META OBJETIVO'] = [get_meta_supervisor(s, meses_activos) for s in res.index]
     else:
-        plazas_metas = {'LIMA': 0, 'NORTE': 0, 'SUR': 0, 'OTROS': 0}
+        plazas_metas = {plaza: 0 for plaza in res.index}
         for mes in meses_activos:
             for sup, meta in MESES_CONFIG.get(mes, {}).get('metas', {}).items():
                 if sup == 'WINNIE':
                     continue
-                zona = ZONAS_MAP.get(sup, 'OTROS')
-                region = 'LIMA' if zona == 'LIMA' else ('NORTE' if zona in NORTE else ('SUR' if zona in SUR else 'OTROS'))
-                plazas_metas[region] += meta
+                plaza = get_plaza_reporte(sup, mes)
+                plazas_metas[plaza] = plazas_metas.get(plaza, 0) + meta
         res['META OBJETIVO'] = [plazas_metas.get(p, 0) for p in res.index]
     res['AVANCE'] = (res['TOTAL DESEMBOLSO'] / res['META OBJETIVO'] * 100).fillna(0)
     res['Q POR INGRESAR'] = g(pc, 'POR INGRESAR')
@@ -1245,7 +1295,10 @@ df_super = build_matrix(m_df, 'SUPERVISOR', selected_mes)
 def build_plaza_matrix(data, meses_activos):
     if data.empty: return pd.DataFrame()
     data = data.copy()
-    data['PLAZA'] = data['REGION']
+    data['PLAZA'] = data.apply(
+        lambda row: get_plaza_reporte(row['SUPERVISOR'], row['MES']),
+        axis=1,
+    )
     return build_matrix(data, 'PLAZA', meses_activos)
 
 df_plaza = build_plaza_matrix(m_df, selected_mes)
