@@ -449,6 +449,7 @@ ZONAS_MAP = {
     'ELIZABETH ESQUIVEL': 'TRUJILLO',                                           # AGOSTO - Actualizado según OPI
     'ANA ALIAGA': 'LIMA',                                                       # AGOSTO - Nuevo
     'MERCEDES GIRALDO': 'LIMA',                                                 # AGOSTO - Nuevo
+    'RENZO CACEDA': 'TRUJILLO',                                                 # SETIEMBRE - Nuevo
 }
 NORTE = ['CHICLAYO', 'PIURA', 'TRUJILLO']
 SUR = ['AREQUIPA', 'HUANCAYO']
@@ -469,6 +470,17 @@ ZONAS_GESTION_POR_MES = {
         'LUIS CHUSE': 'LIMA 2',
         'NATHALIE ARANDA': 'LIMA 2',
     },
+    'SETIEMBRE': {
+        'ANGIE SILVERA': 'LIMA 1',
+        'ANA ALIAGA': 'LIMA 1',
+        'MERCEDES GIRALDO': 'LIMA 1',
+        'KENNY MORALES': 'LIMA 1',
+        'WINNIE ESCALANTE': 'LIMA 1',
+        'JOSE LUIS QUINTEROS': 'LIMA 1',
+        'ELIZABETH ESQUIVEL': 'LIMA 1',
+        'LUIS CHUSE': 'LIMA 2',
+        'NATHALIE ARANDA': 'LIMA 2',
+    },
 }
 
 # Reclasificaciones de gestión para la tabla "Por Plaza". Estas reglas son
@@ -481,6 +493,21 @@ PLAZAS_REPORTE_POR_MES = {
         'JOSE LUIS QUINTEROS': 'LIMA 1',
         'ANA ALIAGA': 'LIMA 1',
         'MERCEDES GIRALDO': 'LIMA 1',
+        'LUIS CHUSE': 'LIMA 2',
+        'NATHALIE ARANDA': 'LIMA 2',
+        'JIMMY COLLAZOS': 'TARAPOTO',
+        'MARIELLA PAÑAHUA': 'AYACUCHO',
+        'THALIA SALOME': 'HUANCAYO',
+        'VIOLETA LLERENA': 'AREQUIPA',
+    },
+    'SETIEMBRE': {
+        'ANGIE SILVERA': 'LIMA 1',
+        'ANA ALIAGA': 'LIMA 1',
+        'MERCEDES GIRALDO': 'LIMA 1',
+        'KENNY MORALES': 'LIMA 1',
+        'WINNIE ESCALANTE': 'LIMA 1',
+        'JOSE LUIS QUINTEROS': 'LIMA 1',
+        'ELIZABETH ESQUIVEL': 'LIMA 1',
         'LUIS CHUSE': 'LIMA 2',
         'NATHALIE ARANDA': 'LIMA 2',
         'JIMMY COLLAZOS': 'TARAPOTO',
@@ -608,6 +635,24 @@ MESES_CONFIG = {
             'MILUSKA LINARES': 1_000_000, 'WINNIE': 2_000_000,
             'ELIZABETH ESQUIVEL': 1_000_000, 'ANA ALIAGA': 1_000_000,
             'MERCEDES GIRALDO': 2_000_000,
+        }
+    },
+    'SETIEMBRE': {
+        'url': 'https://docs.google.com/spreadsheets/d/1vJ8tTPliF0SiuHkSgcGSIa6AXLnKdtaWQe3Z-sfdUso/export?format=xlsx',
+        'format': 'excel_multisheet',
+        'metas': {
+            'ANGIE SILVERA': 2_000_000, 'NAHOMI DIAZ': 1_000_000,
+            'JHON ZAMORA': 1_000_000, 'WENDY IPANEQUE': 1_000_000,
+            'OMAR MINAYA': 1_000_000, 'NATHALIE ARANDA': 500_000,
+            'LUIS CHUSE': 2_000_000, 'ANA ALIAGA': 1_000_000,
+            'MERCEDES GIRALDO': 2_000_000, 'JIMMY COLLAZOS': 800_000,
+            'KENNY MORALES': 1_000_000, 'WINNIE ESCALANTE': 2_000_000,
+            'MARIELLA PAÑAHUA': 800_000, 'JOSE LUIS QUINTEROS': 1_000_000,
+            'ELIZABETH ESQUIVEL': 1_000_000, 'MILUSKA LINARES': 1_000_000,
+            'THALIA SALOME': 1_000_000, 'VIOLETA LLERENA': 1_000_000,
+            'ARACELY VENTURA': 1_000_000, 'RENZO CACEDA': 1_000_000,
+            'ALEXANDRA GUZMAN': 1_000_000,
+            'WINNIE': 2_000_000,  # alias de WINNIE ESCALANTE
         }
     },
 }
