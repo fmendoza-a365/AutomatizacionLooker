@@ -557,6 +557,7 @@ ZONAS_MAP = {
     'ANA ALIAGA': 'LIMA',                                                       # AGOSTO - Nuevo
     'MERCEDES GIRALDO': 'LIMA',                                                 # AGOSTO - Nuevo
     'RENZO CACEDA': 'TRUJILLO',                                                 # SETIEMBRE - Nuevo
+    'MELISSA BRAVO': 'PIURA',                                                   # SETIEMBRE - Nueva supervisora
 }
 NORTE = ['CHICLAYO', 'PIURA', 'TRUJILLO']
 SUR = ['AREQUIPA', 'HUANCAYO']
@@ -751,7 +752,7 @@ MESES_CONFIG = {
     },
     'SETIEMBRE': {
         'file': 'data/SETIEMBRE.xlsx',
-        'url': 'https://docs.google.com/spreadsheets/d/1vJ8tTPliF0SiuHkSgcGSIa6AXLnKdtaWQe3Z-sfdUso/export?format=xlsx',
+        'url': 'https://docs.google.com/spreadsheets/d/1qwpDV6VqB7s9ma3tC6B_Lhmx34xxoZL06bOvmZZg3Gk/export?format=xlsx',
         'format': 'excel_multisheet',
         'metas': {
             'ANGIE SILVERA': 2_000_000, 'NAHOMI DIAZ': 1_000_000,
@@ -764,7 +765,7 @@ MESES_CONFIG = {
             'ELIZABETH ESQUIVEL': 1_000_000, 'MILUSKA LINARES': 1_000_000,
             'THALIA SALOME': 1_000_000, 'VIOLETA LLERENA': 1_000_000,
             'ARACELY VENTURA': 1_000_000, 'RENZO CACEDA': 1_000_000,
-            'ALEXANDRA GUZMAN': 1_000_000,
+            'ALEXANDRA GUZMAN': 1_000_000, 'MELISSA BRAVO': 1_000_000,  # Nueva supervisora Setiembre
             'WINNIE': 2_000_000,  # alias de WINNIE ESCALANTE
         }
     },
