@@ -17,6 +17,12 @@ st.set_page_config(
 )
 
 # --- SISTEMA DE AUTENTICACIÓN (LOGIN) ---
+if st.query_params.get("logout") == "1":
+    st.session_state["authenticated"] = False
+    st.session_state.pop("user", None)
+    st.query_params.clear()
+    st.rerun()
+
 def check_password():
     """Retorna True si el usuario está autenticado, de lo contrario muestra la pantalla de Login."""
     if st.session_state.get("authenticated", False):
@@ -45,7 +51,7 @@ def check_password():
         html, body, [class*="css"] { font-family: 'Manrope', sans-serif !important; }
         #MainMenu, footer, header { visibility: hidden; }
         section[data-testid="stSidebar"], div[data-testid="stSidebar"], [data-testid="collapsedControl"] { display: none !important; }
-        .block-container { padding-top: 3rem !important; max-width: 460px !important; }
+        [data-testid="stFormSubmitInstructions"] { display: none !important; }
         div[data-testid="stForm"] {
             background-color: #FFFFFF !important;
             border: 1px solid #DDDDE5 !important;
@@ -70,26 +76,28 @@ def check_password():
         </style>
     """, unsafe_allow_html=True)
 
-    st.markdown(f"""
-        <div style="text-align: center; margin-bottom: 24px;">
-            {logo_img}
-            <h2 style="font-size: 22px; font-weight: 800; color: #1A4FA0; margin: 0;">Centro de Operaciones</h2>
-            <p style="font-size: 13px; color: #7B7B8A; margin-top: 4px;">Ingresa tus credenciales para acceder al sistema</p>
-        </div>
-    """, unsafe_allow_html=True)
+    c_left, c_main, c_right = st.columns([1, 1.2, 1])
+    with c_main:
+        st.markdown(f"""
+            <div style="text-align: center; margin-top: 30px; margin-bottom: 24px;">
+                {logo_img}
+                <h2 style="font-size: 22px; font-weight: 800; color: #1A4FA0; margin: 0;">Centro de Operaciones</h2>
+                <p style="font-size: 13px; color: #7B7B8A; margin-top: 4px;">Ingresa tus credenciales para acceder al sistema</p>
+            </div>
+        """, unsafe_allow_html=True)
 
-    with st.form("login_form"):
-        username_input = st.text_input("Usuario", placeholder="ej. admin").strip()
-        password_input = st.text_input("Contraseña", type="password", placeholder="••••••••").strip()
-        submitted = st.form_submit_button("Iniciar Sesión", use_container_width=True)
+        with st.form("login_form"):
+            username_input = st.text_input("Usuario", placeholder="Usuario").strip()
+            password_input = st.text_input("Contraseña", type="password", placeholder="Contraseña").strip()
+            submitted = st.form_submit_button("Iniciar Sesión", use_container_width=True)
 
-        if submitted:
-            if username_input in passwords_config and str(passwords_config[username_input]) == password_input:
-                st.session_state["authenticated"] = True
-                st.session_state["user"] = username_input
-                st.rerun()
-            else:
-                st.error("❌ Usuario o contraseña incorrectos.")
+            if submitted:
+                if username_input in passwords_config and str(passwords_config[username_input]) == password_input:
+                    st.session_state["authenticated"] = True
+                    st.session_state["user"] = username_input
+                    st.rerun()
+                else:
+                    st.error("❌ Usuario o contraseña incorrectos.")
 
     return False
 
@@ -297,26 +305,22 @@ def render_smartcash():
     sc_logo_html = f'<img src="data:image/png;base64,{sc_logo_b64}" style="height:44px;" alt="Logo A365 BCP">' if sc_logo_b64 else '<span style="font-weight:800;font-size:22px;color:#1A4FA0;">A365 BCP</span>'
 
     # --- Topbar ---
+    user_name_sc = str(st.session_state.get('user', 'Usuario')).capitalize()
     st.markdown(f"""
     <div class="sc-topbar">
         <div class="sc-topbar-left">{sc_logo_html}<span class="sc-topbar-title">SmartCash — Comisiones</span></div>
         <div class="sc-topbar-right">
+            <span style="font-weight:700; color:#1A4FA0; font-size:12px; margin-right:6px;">👤 {user_name_sc}</span>
             <a href="/" target="_self" class="sc-back-button">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="white" style="margin-right:6px;"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
                 Volver al Dashboard
             </a>
+            <a href="/?logout=1" target="_self" class="sc-back-button" style="background-color:#C43A31 !important; border-color:#C43A31 !important;">
+                🚪 Cerrar Sesión
+            </a>
         </div>
     </div>
     """, unsafe_allow_html=True)
-
-    col_sc_opts, col_sc_user = st.columns([8.2, 1.8])
-    with col_sc_user:
-        with st.popover(f"👤 {st.session_state.get('user', 'Usuario')}", use_container_width=True):
-            st.caption(f"Usuario activo: **{st.session_state.get('user', 'Usuario')}**")
-            if st.button("🚪 Cerrar Sesión", key="btn_logout_sc", use_container_width=True):
-                st.session_state["authenticated"] = False
-                st.session_state.pop("user", None)
-                st.rerun()
 
     # --- Selector de mes ---
     meses_disponibles = [m for m in MESES_ORDEN if m in MESES_CONFIG]
@@ -995,11 +999,13 @@ st.markdown(f"""
 
 # URL de la página secundaria usando parámetros de consulta
 href_html = "/?view=cotizador"
+user_name_main = str(st.session_state.get('user', 'Usuario')).capitalize()
 
 st.markdown(f"""
 <div class="topbar">
     <div class="topbar-left">{logo_html}<span class="topbar-title">Centro de Operaciones</span></div>
     <div class="topbar-right">
+        <span style="font-weight:700; color:#1A4FA0; font-size:12px; margin-right:8px;">👤 {user_name_main}</span>
         <a href="{href_html}" target="_blank" class="topbar-button">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="white" style="margin-right:6px;"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
             Abrir Cotizador
@@ -1007,6 +1013,9 @@ st.markdown(f"""
         <a href="/?view=smartcash" target="_blank" class="topbar-button" style="background-color:#2D9A3F !important; border-color:#2D9A3F !important;">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="white" style="margin-right:6px;"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
             SmartCash
+        </a>
+        <a href="/?logout=1" target="_self" class="topbar-button" style="background-color:#C43A31 !important; border-color:#C43A31 !important;">
+            🚪 Cerrar Sesión
         </a>
         <span class="topbar-update">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="#7B7B8A"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 11h-2V7h2zm0 4h-2v-2h2z"/></svg>
@@ -1182,26 +1191,15 @@ if meses_fallidos:
         2. Las hojas están vacías o el archivo no es accesible.
         """)
 
-# --- FILTRO GLOBAL SUPERIOR Y SESIÓN ---
+# --- FILTRO GLOBAL SUPERIOR ---
 mes_opts = ordenar_meses(df['MES'].dropna().unique().tolist())
 meses_default = get_mes_default(mes_opts)
-
-col_mes_filter, col_user_session = st.columns([8.2, 1.8])
-with col_mes_filter:
-    with st.popover("📅 Seleccionar Mes", use_container_width=True):
-        st.markdown("**Meses de Gestión**")
-        selected_mes = []
-        for m in mes_opts:
-            if st.checkbox(m, value=m in meses_default, key=f"global_mes_{m}"):
-                selected_mes.append(m)
-
-with col_user_session:
-    with st.popover(f"👤 {st.session_state.get('user', 'Usuario')}", use_container_width=True):
-        st.caption(f"Usuario activo: **{st.session_state.get('user', 'Usuario')}**")
-        if st.button("🚪 Cerrar Sesión", key="global_logout", use_container_width=True):
-            st.session_state["authenticated"] = False
-            st.session_state.pop("user", None)
-            st.rerun()
+with st.popover("📅 Seleccionar Mes", use_container_width=True):
+    st.markdown("**Meses de Gestión**")
+    selected_mes = []
+    for m in mes_opts:
+        if st.checkbox(m, value=m in meses_default, key=f"global_mes_{m}"):
+            selected_mes.append(m)
 
 filtered_df = df[df['MES'].isin(selected_mes)]
 
