@@ -8,10 +8,97 @@ from zoneinfo import ZoneInfo
 import requests
 import json
 
+# --- CONFIGURACIÓN GLOBAL DE PÁGINA ---
+st.set_page_config(
+    page_title="A365 BCP - Centro de Operaciones",
+    layout="wide",
+    page_icon="isotipobcp.png",
+    initial_sidebar_state="collapsed",
+)
+
+# --- SISTEMA DE AUTENTICACIÓN (LOGIN) ---
+def check_password():
+    """Retorna True si el usuario está autenticado, de lo contrario muestra la pantalla de Login."""
+    if st.session_state.get("authenticated", False):
+        return True
+
+    # Cargar contraseñas de secretos o usar valores por defecto
+    passwords_config = {}
+    if hasattr(st, "secrets") and "passwords" in st.secrets:
+        passwords_config = dict(st.secrets["passwords"])
+    else:
+        passwords_config = {"admin": "fuvex2026", "supervisor": "bcp2026", "a365": "a365bcp"}
+
+    def _get_b64_logo(path):
+        try:
+            with open(path, "rb") as f:
+                return base64.b64encode(f.read()).decode()
+        except FileNotFoundError:
+            return None
+
+    logo_b64 = _get_b64_logo("A366BCP.png")
+    logo_img = f'<img src="data:image/png;base64,{logo_b64}" style="height:55px; margin-bottom:12px;" alt="Logo A365 BCP">' if logo_b64 else '<div style="font-size:26px; font-weight:800; color:#1A4FA0;">A365 BCP</div>'
+
+    st.markdown("""
+        <style>
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;600;700;800&display=swap');
+        html, body, [class*="css"] { font-family: 'Manrope', sans-serif !important; }
+        #MainMenu, footer, header { visibility: hidden; }
+        section[data-testid="stSidebar"], div[data-testid="stSidebar"], [data-testid="collapsedControl"] { display: none !important; }
+        .block-container { padding-top: 3rem !important; max-width: 460px !important; }
+        div[data-testid="stForm"] {
+            background-color: #FFFFFF !important;
+            border: 1px solid #DDDDE5 !important;
+            border-radius: 14px !important;
+            padding: 32px 28px !important;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.08) !important;
+        }
+        button[kind="formSubmit"] {
+            background-color: #1A4FA0 !important;
+            color: #FFFFFF !important;
+            font-weight: 700 !important;
+            border-radius: 8px !important;
+            border: none !important;
+            height: 44px !important;
+            margin-top: 10px !important;
+            transition: all 0.3s ease !important;
+        }
+        button[kind="formSubmit"]:hover {
+            background-color: #E67212 !important;
+            box-shadow: 0 4px 12px rgba(230,114,18,0.3) !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown(f"""
+        <div style="text-align: center; margin-bottom: 24px;">
+            {logo_img}
+            <h2 style="font-size: 22px; font-weight: 800; color: #1A4FA0; margin: 0;">Centro de Operaciones</h2>
+            <p style="font-size: 13px; color: #7B7B8A; margin-top: 4px;">Ingresa tus credenciales para acceder al sistema</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    with st.form("login_form"):
+        username_input = st.text_input("Usuario", placeholder="ej. admin").strip()
+        password_input = st.text_input("Contraseña", type="password", placeholder="••••••••").strip()
+        submitted = st.form_submit_button("Iniciar Sesión", use_container_width=True)
+
+        if submitted:
+            if username_input in passwords_config and str(passwords_config[username_input]) == password_input:
+                st.session_state["authenticated"] = True
+                st.session_state["user"] = username_input
+                st.rerun()
+            else:
+                st.error("❌ Usuario o contraseña incorrectos.")
+
+    return False
+
+if not check_password():
+    st.stop()
+
 # --- CONFIGURACIÓN DE VISTA (COTIZADOR) ---
 # Si se accede vía ?view=cotizador, mostramos el HTML y detenemos el resto del dashboard
 if st.query_params.get("view") == "cotizador":
-    st.set_page_config(layout="wide", page_title="Cotizador BCP")
     st.markdown("""
         <style>
         #MainMenu {visibility: hidden;}
@@ -33,7 +120,6 @@ if st.query_params.get("view") == "cotizador":
 
 # --- CONFIGURACIÓN DE VISTA (SMARTCASH) ---
 def render_smartcash():
-    st.set_page_config(layout="wide", page_title="SmartCash")
     st.markdown("""
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap');
@@ -222,6 +308,15 @@ def render_smartcash():
         </div>
     </div>
     """, unsafe_allow_html=True)
+
+    col_sc_opts, col_sc_user = st.columns([8.2, 1.8])
+    with col_sc_user:
+        with st.popover(f"👤 {st.session_state.get('user', 'Usuario')}", use_container_width=True):
+            st.caption(f"Usuario activo: **{st.session_state.get('user', 'Usuario')}**")
+            if st.button("🚪 Cerrar Sesión", key="btn_logout_sc", use_container_width=True):
+                st.session_state["authenticated"] = False
+                st.session_state.pop("user", None)
+                st.rerun()
 
     # --- Selector de mes ---
     meses_disponibles = [m for m in MESES_ORDEN if m in MESES_CONFIG]
@@ -714,14 +809,6 @@ REGION_COLORS = {'LIMA': '#1A4FA0', 'NORTE': '#E67212', 'SUR': '#7C5CBF', 'OTROS
 if st.query_params.get("view") == "smartcash":
     render_smartcash()
 
-# --- PAGE CONFIG ---
-st.set_page_config(
-    page_title="A365 BCP - Centro de Operaciones",
-    layout="wide",
-    page_icon="isotipobcp.png",
-    initial_sidebar_state="collapsed",
-)
-
 # --- LOGO ---
 def get_b64(path):
     try:
@@ -1095,15 +1182,26 @@ if meses_fallidos:
         2. Las hojas están vacías o el archivo no es accesible.
         """)
 
-# --- FILTRO GLOBAL SUPERIOR ---
+# --- FILTRO GLOBAL SUPERIOR Y SESIÓN ---
 mes_opts = ordenar_meses(df['MES'].dropna().unique().tolist())
 meses_default = get_mes_default(mes_opts)
-with st.popover("📅 Seleccionar Mes", width="stretch"):
-    st.markdown("**Meses de Gestión**")
-    selected_mes = []
-    for m in mes_opts:
-        if st.checkbox(m, value=m in meses_default, key=f"global_mes_{m}"):
-            selected_mes.append(m)
+
+col_mes_filter, col_user_session = st.columns([8.2, 1.8])
+with col_mes_filter:
+    with st.popover("📅 Seleccionar Mes", use_container_width=True):
+        st.markdown("**Meses de Gestión**")
+        selected_mes = []
+        for m in mes_opts:
+            if st.checkbox(m, value=m in meses_default, key=f"global_mes_{m}"):
+                selected_mes.append(m)
+
+with col_user_session:
+    with st.popover(f"👤 {st.session_state.get('user', 'Usuario')}", use_container_width=True):
+        st.caption(f"Usuario activo: **{st.session_state.get('user', 'Usuario')}**")
+        if st.button("🚪 Cerrar Sesión", key="global_logout", use_container_width=True):
+            st.session_state["authenticated"] = False
+            st.session_state.pop("user", None)
+            st.rerun()
 
 filtered_df = df[df['MES'].isin(selected_mes)]
 
