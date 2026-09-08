@@ -204,11 +204,15 @@ def render_smartcash():
         'PENDIENTE DE DOCUMENTAR': 'PENDIENTE DE DOCUMENTAR', 'PENDIENTE DE REMESA': 'PENDIENTE DE REMESA'
     }
 
-    def sc_load_excel_multisheet(url):
+    def sc_load_excel_multisheet(source):
+        import os
         all_dfs = []
-        res = requests.get(url, timeout=30)
-        res.raise_for_status()
-        xls = pd.ExcelFile(BytesIO(res.content))
+        if os.path.isfile(source):
+            xls = pd.ExcelFile(source)
+        else:
+            res = requests.get(source, timeout=30)
+            res.raise_for_status()
+            xls = pd.ExcelFile(BytesIO(res.content))
         for sheet in xls.sheet_names:
             if str(sheet).strip().upper() == 'CONSOLIDADO':
                 continue
@@ -248,15 +252,22 @@ def render_smartcash():
 
     @st.cache_data(ttl=60)
     def sc_load_month(mes_key):
+        import os
         config = MESES_CONFIG.get(mes_key)
         if not config:
             raise ValueError(f"No existe configuración para {mes_key}.")
+        local_file = config.get('file', '')
+        use_local = bool(local_file and os.path.isfile(local_file))
         if config['format'] == 'csv':
-            res = requests.get(config['url'], timeout=30)
-            res.raise_for_status()
-            df = pd.read_csv(BytesIO(res.content))
+            if use_local:
+                df = pd.read_csv(local_file)
+            else:
+                res = requests.get(config['url'], timeout=30)
+                res.raise_for_status()
+                df = pd.read_csv(BytesIO(res.content))
         elif config['format'] == 'excel_multisheet':
-            df = sc_load_excel_multisheet(config['url'])
+            source = local_file if use_local else config['url']
+            df = sc_load_excel_multisheet(source)
         else:
             raise ValueError(f"Formato no compatible para {mes_key}.")
         if df.empty:
@@ -657,6 +668,7 @@ def get_plaza_reporte(supervisor, mes):
 # --- CONFIGURACIÓN POR MES (URL + Formato + Metas) ---
 MESES_CONFIG = {
     'ABRIL': {
+        'file': 'data/ABRIL.csv',
         'url': 'https://docs.google.com/spreadsheets/d/16PzK230jtrjkpHYq5mYSFrdeXk-0B6N7/export?format=csv&gid=305780908',
         'format': 'csv',
         'metas': {
@@ -668,6 +680,7 @@ MESES_CONFIG = {
         }
     },
     'MAYO': {
+        'file': 'data/MAYO.xlsx',
         'url': 'https://docs.google.com/spreadsheets/d/1zJONhh_3kih4HZUNvi3DC4Ybou84U-SUsiaOdbwEVJw/export?format=xlsx',
         'format': 'excel_multisheet',
         'metas': {
@@ -682,6 +695,7 @@ MESES_CONFIG = {
         }
     },
     'JUNIO': {
+        'file': 'data/JUNIO.xlsx',
         'url': 'https://docs.google.com/spreadsheets/d/1MRrof2MphV7CC7Hpb1pTAe8XLPvAhj1uGT8cUM-Z3uY/export?format=xlsx',
         'format': 'excel_multisheet',
         'metas': {
@@ -697,6 +711,7 @@ MESES_CONFIG = {
         }
     },
     'JULIO': {
+        'file': 'data/JULIO.xlsx',
         'url': 'https://docs.google.com/spreadsheets/d/1_kCvxiKSwk9juJMMl2o5MA6oVNJVolFwd-FdUzkyK90/export?format=xlsx',
         'format': 'excel_multisheet',
         'metas': {
@@ -718,6 +733,7 @@ MESES_CONFIG = {
         }
     },
     'AGOSTO': {
+        'file': 'data/AGOSTO.xlsx',
         'url': 'https://docs.google.com/spreadsheets/d/1RqBppmGusi7RrxsVMl7yqn3Vh2UyYhssS3oKZlaT2wk/export?format=xlsx',
         'format': 'excel_multisheet',
         'metas': {
@@ -734,6 +750,7 @@ MESES_CONFIG = {
         }
     },
     'SETIEMBRE': {
+        'file': 'data/SETIEMBRE.xlsx',
         'url': 'https://docs.google.com/spreadsheets/d/1vJ8tTPliF0SiuHkSgcGSIa6AXLnKdtaWQe3Z-sfdUso/export?format=xlsx',
         'format': 'excel_multisheet',
         'metas': {
@@ -1031,14 +1048,18 @@ ESTADO_MAPPING = {
     'PENDIENTE DE DOCUMENTAR': 'PENDIENTE DE DOCUMENTAR', 'PENDIENTE DE REMESA': 'PENDIENTE DE REMESA'
 }
 
-def _load_excel_multisheet(url):
-    """Carga un Excel multi-hoja donde cada hoja es un supervisor. Reutilizable para cualquier mes."""
+def _load_excel_multisheet(source):
+    """Carga un Excel multi-hoja donde cada hoja es un supervisor. Acepta ruta local o URL."""
     all_dfs = []
     sheet_names = []
     try:
-        res = requests.get(url, timeout=30)
-        res.raise_for_status()
-        xls = pd.ExcelFile(BytesIO(res.content))
+        import os
+        if os.path.isfile(source):
+            xls = pd.ExcelFile(source)
+        else:
+            res = requests.get(source, timeout=30)
+            res.raise_for_status()
+            xls = pd.ExcelFile(BytesIO(res.content))
         sheet_names = xls.sheet_names
         for sheet in sheet_names:
             if str(sheet).strip().upper() == 'CONSOLIDADO':
@@ -1079,14 +1100,23 @@ def load_data():
     debug_info = {}
     for mes, config in MESES_CONFIG.items():
         try:
+            import os
+            # Prioriza archivo local de backup; si no existe, descarga desde URL
+            local_file = config.get('file', '')
+            use_local = bool(local_file and os.path.isfile(local_file))
+
             if config['format'] == 'csv':
-                res = requests.get(config['url'], timeout=30)
-                res.raise_for_status()
-                df_mes = pd.read_csv(BytesIO(res.content))
-                debug_info[mes] = {'cargado': not df_mes.empty, 'registros': len(df_mes)}
+                if use_local:
+                    df_mes = pd.read_csv(local_file)
+                else:
+                    res = requests.get(config['url'], timeout=30)
+                    res.raise_for_status()
+                    df_mes = pd.read_csv(BytesIO(res.content))
+                debug_info[mes] = {'cargado': not df_mes.empty, 'registros': len(df_mes), 'fuente': 'local' if use_local else 'url'}
             elif config['format'] == 'excel_multisheet':
-                df_mes, sheets = _load_excel_multisheet(config['url'])
-                debug_info[mes] = {'cargado': not df_mes.empty, 'registros': len(df_mes), 'hojas': sheets}
+                source = local_file if use_local else config['url']
+                df_mes, sheets = _load_excel_multisheet(source)
+                debug_info[mes] = {'cargado': not df_mes.empty, 'registros': len(df_mes), 'hojas': sheets, 'fuente': 'local' if use_local else 'url'}
             else:
                 continue
             if not df_mes.empty:
