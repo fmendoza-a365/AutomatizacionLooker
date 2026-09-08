@@ -751,7 +751,6 @@ MESES_CONFIG = {
         }
     },
     'SETIEMBRE': {
-        'file': 'data/SETIEMBRE.xlsx',
         'url': 'https://docs.google.com/spreadsheets/d/1qwpDV6VqB7s9ma3tC6B_Lhmx34xxoZL06bOvmZZg3Gk/export?format=xlsx',
         'format': 'excel_multisheet',
         'metas': {
