@@ -51,25 +51,23 @@ def check_password():
         html, body, [class*="css"] { font-family: 'Manrope', sans-serif !important; }
         #MainMenu, footer, header { visibility: hidden; }
         section[data-testid="stSidebar"], div[data-testid="stSidebar"], [data-testid="collapsedControl"] { display: none !important; }
-        [data-testid="stFormSubmitInstructions"] { display: none !important; }
-        div[data-testid="stForm"] {
-            background-color: #FFFFFF !important;
-            border: 1px solid #DDDDE5 !important;
-            border-radius: 14px !important;
-            padding: 32px 28px !important;
-            box-shadow: 0 12px 32px rgba(0,0,0,0.08) !important;
+        [data-testid="stFormSubmitInstructions"], [data-testid="stInputInstructions"], small {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            opacity: 0 !important;
         }
-        button[kind="formSubmit"] {
+        div[data-testid="stButton"] > button {
             background-color: #1A4FA0 !important;
             color: #FFFFFF !important;
             font-weight: 700 !important;
             border-radius: 8px !important;
             border: none !important;
             height: 44px !important;
-            margin-top: 10px !important;
+            margin-top: 14px !important;
             transition: all 0.3s ease !important;
         }
-        button[kind="formSubmit"]:hover {
+        div[data-testid="stButton"] > button:hover {
             background-color: #E67212 !important;
             box-shadow: 0 4px 12px rgba(230,114,18,0.3) !important;
         }
@@ -79,25 +77,24 @@ def check_password():
     c_left, c_main, c_right = st.columns([1, 1.2, 1])
     with c_main:
         st.markdown(f"""
-            <div style="text-align: center; margin-top: 30px; margin-bottom: 24px;">
+            <div style="text-align: center; margin-top: 40px; margin-bottom: 24px;">
                 {logo_img}
                 <h2 style="font-size: 22px; font-weight: 800; color: #1A4FA0; margin: 0;">Centro de Operaciones</h2>
                 <p style="font-size: 13px; color: #7B7B8A; margin-top: 4px;">Ingresa tus credenciales para acceder al sistema</p>
             </div>
         """, unsafe_allow_html=True)
 
-        with st.form("login_form"):
-            username_input = st.text_input("Usuario", placeholder="Usuario").strip()
-            password_input = st.text_input("Contraseña", type="password", placeholder="Contraseña").strip()
-            submitted = st.form_submit_button("Iniciar Sesión", use_container_width=True)
+        username_input = st.text_input("Usuario", placeholder="Usuario", key="login_username").strip()
+        password_input = st.text_input("Contraseña", type="password", placeholder="Contraseña", key="login_password").strip()
+        submitted = st.button("Iniciar Sesión", use_container_width=True, key="login_submit_btn")
 
-            if submitted:
-                if username_input in passwords_config and str(passwords_config[username_input]) == password_input:
-                    st.session_state["authenticated"] = True
-                    st.session_state["user"] = username_input
-                    st.rerun()
-                else:
-                    st.error("❌ Usuario o contraseña incorrectos.")
+        if submitted:
+            if username_input in passwords_config and str(passwords_config[username_input]) == password_input:
+                st.session_state["authenticated"] = True
+                st.session_state["user"] = username_input
+                st.rerun()
+            else:
+                st.error("❌ Usuario o contraseña incorrectos.")
 
     return False
 
