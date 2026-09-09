@@ -33,7 +33,7 @@ def check_password():
     if hasattr(st, "secrets") and "passwords" in st.secrets:
         passwords_config = dict(st.secrets["passwords"])
     else:
-        passwords_config = {"admin": "fuvex2026", "supervisor": "bcp2026", "a365": "a365bcp"}
+        passwords_config = {"admin": "fuvexbcp.2026", "supervisor": "bcp2026", "a365": "a365bcp"}
 
     def _get_b64_logo(path):
         try:
