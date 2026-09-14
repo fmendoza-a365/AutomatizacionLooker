@@ -4,6 +4,7 @@ import plotly.graph_objects as go
 import base64
 from io import BytesIO
 from datetime import datetime
+from time import time
 from zoneinfo import ZoneInfo
 import requests
 import json
@@ -113,7 +114,7 @@ if st.query_params.get("view") == "cotizador":
         iframe {border: none;}
         </style>
     """, unsafe_allow_html=True)
-    
+
     file_path = "bcp_convenios_banner_pdf_imagen_9_inputs_cliente.html"
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
@@ -558,6 +559,8 @@ ZONAS_MAP = {
     'MERCEDES GIRALDO': 'LIMA',                                                 # AGOSTO - Nuevo
     'RENZO CACEDA': 'TRUJILLO',                                                 # SETIEMBRE - Nuevo
     'MELISSA BRAVO': 'PIURA',                                                   # SETIEMBRE - Nueva supervisora
+    'EMILIA PASCALO': 'LIMA',
+    'JANETH VASQUEZ': 'LIMA',
 }
 NORTE = ['CHICLAYO', 'PIURA', 'TRUJILLO']
 SUR = ['AREQUIPA', 'HUANCAYO']
@@ -580,6 +583,8 @@ ZONAS_GESTION_POR_MES = {
     },
     'SETIEMBRE': {
         'ANGIE SILVERA': 'LIMA 1',
+        'EMILIA PASCALO': 'LIMA 1',
+        'JANETH VASQUEZ': 'LIMA 1',
         'ANA ALIAGA': 'LIMA 1',
         'MERCEDES GIRALDO': 'LIMA 1',
         'KENNY MORALES': 'LIMA 1',
@@ -610,6 +615,8 @@ PLAZAS_REPORTE_POR_MES = {
     },
     'SETIEMBRE': {
         'ANGIE SILVERA': 'LIMA 1',
+        'EMILIA PASCALO': 'LIMA 1',
+        'JANETH VASQUEZ': 'LIMA 1',
         'ANA ALIAGA': 'LIMA 1',
         'MERCEDES GIRALDO': 'LIMA 1',
         'KENNY MORALES': 'LIMA 1',
@@ -765,6 +772,7 @@ MESES_CONFIG = {
             'THALIA SALOME': 1_000_000, 'VIOLETA LLERENA': 1_000_000,
             'ARACELY VENTURA': 1_000_000, 'RENZO CACEDA': 1_000_000,
             'ALEXANDRA GUZMAN': 1_000_000, 'MELISSA BRAVO': 1_000_000,  # Nueva supervisora Setiembre
+            'EMILIA PASCALO': 1_000_000, 'JANETH VASQUEZ': 1_000_000,
             'WINNIE': 2_000_000,  # alias de WINNIE ESCALANTE
         }
     },
@@ -898,7 +906,7 @@ st.markdown(f"""
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
         transform: translateY(-2px);
     }}
-    
+
     /* Optimización Móvil */
     @media (max-width: 768px) {{
         .kpi-row {{
@@ -952,7 +960,7 @@ st.markdown(f"""
             font-size: 1.8rem !important;
         }}
     }}
-    
+
     /* Estilo Premium para Botones de Exportación */
     .export-button {{
         display: inline-flex;
@@ -981,7 +989,7 @@ st.markdown(f"""
     .export-button svg {{
         margin-right: 8px;
     }}
-    
+
     /* Estilo para el botón de la cabecera */
     .topbar-button {{
         display: inline-flex !important;
@@ -1033,7 +1041,7 @@ st.markdown(f"""
         </a>
         <span class="topbar-update">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="#7B7B8A"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 11h-2V7h2zm0 4h-2v-2h2z"/></svg>
-            Datos actualizados cada 1 min
+            Actualización automática cada 1 min
         </span>
     </div>
 </div>
@@ -1095,7 +1103,8 @@ def _load_excel_multisheet(source):
     return df_result, sheet_names
 
 @st.cache_data(ttl=60)
-def load_data():
+def load_data(refresh_minute):
+    # La clave por minuto evita reutilizar datos anteriores en la recarga automática.
     all_monthly = []
     debug_info = {}
     for mes, config in MESES_CONFIG.items():
@@ -1199,390 +1208,394 @@ def load_data():
     )
     return df
 
-with st.spinner('Conectando...'):
-    df = load_data()
+@st.fragment(run_every=60)
+def render_opi():
+    with st.spinner('Conectando...'):
+        df = load_data(int(time() // 60))
 
-# --- DIAGNÓSTICO DE DATOS ---
-debug_meses = st.session_state.get('debug_meses', {})
-meses_fallidos = [m for m, info in debug_meses.items() if not info.get('cargado', False)]
-if meses_fallidos:
-    with st.expander(f"⚠️ Aviso: No se detectaron datos de {', '.join(meses_fallidos)}", expanded=False):
-        for mes in meses_fallidos:
-            info = debug_meses[mes]
-            st.warning(f"No se encontraron registros válidos en {mes}.")
-            if 'hojas' in info:
-                st.info(f"Hojas encontradas: {', '.join(info['hojas'])}")
-        st.markdown("""
-        **Posibles causas:**
-        1. Ninguna hoja tiene una columna llamada exactamente **'PLAZA DE VENTA'**.
-        2. Las hojas están vacías o el archivo no es accesible.
-        """)
+    # --- DIAGNÓSTICO DE DATOS ---
+    debug_meses = st.session_state.get('debug_meses', {})
+    meses_fallidos = [m for m, info in debug_meses.items() if not info.get('cargado', False)]
+    if meses_fallidos:
+        with st.expander(f"⚠️ Aviso: No se detectaron datos de {', '.join(meses_fallidos)}", expanded=False):
+            for mes in meses_fallidos:
+                info = debug_meses[mes]
+                st.warning(f"No se encontraron registros válidos en {mes}.")
+                if 'hojas' in info:
+                    st.info(f"Hojas encontradas: {', '.join(info['hojas'])}")
+            st.markdown("""
+            **Posibles causas:**
+            1. Ninguna hoja tiene una columna llamada exactamente **'PLAZA DE VENTA'**.
+            2. Las hojas están vacías o el archivo no es accesible.
+            """)
 
-# --- FILTRO GLOBAL SUPERIOR ---
-mes_opts = ordenar_meses(df['MES'].dropna().unique().tolist())
-meses_default = get_mes_default(mes_opts)
-with st.popover("📅 Seleccionar Mes", use_container_width=True):
-    st.markdown("**Meses de Gestión**")
-    selected_mes = []
-    for m in mes_opts:
-        if st.checkbox(m, value=m in meses_default, key=f"global_mes_{m}"):
-            selected_mes.append(m)
+    # --- FILTRO GLOBAL SUPERIOR ---
+    mes_opts = ordenar_meses(df['MES'].dropna().unique().tolist())
+    meses_default = get_mes_default(mes_opts)
+    with st.popover("📅 Seleccionar Mes", use_container_width=True):
+        st.markdown("**Meses de Gestión**")
+        selected_mes = []
+        for m in mes_opts:
+            if st.checkbox(m, value=m in meses_default, key=f"global_mes_{m}"):
+                selected_mes.append(m)
 
-filtered_df = df[df['MES'].isin(selected_mes)]
+    filtered_df = df[df['MES'].isin(selected_mes)]
 
-# --- KPIs ---
-desembolsado_df = filtered_df[filtered_df['ESTADO LIMPIO'] == 'DESEMBOLSADO']
+    # --- KPIs ---
+    desembolsado_df = filtered_df[filtered_df['ESTADO LIMPIO'] == 'DESEMBOLSADO']
 
-# --- CALCULO META DINÁMICA ---
-# Base: suma directa desde MESES_CONFIG para los meses activos (incluye sups sin datos aún)
-meta_base = sum(
-    sum(v for k, v in MESES_CONFIG.get(m, {}).get('metas', {}).items() if k != 'WINNIE')
-    for m in selected_mes
-)
-meta_actual = meta_base
-
-
-monto_desembolso = desembolsado_df['MAF NETO_Num'].sum()
-q_desembolso = len(desembolsado_df)
-avance = (monto_desembolso / meta_actual * 100) if meta_actual > 0 else 0
-cantidad_ops = len(filtered_df)
-ticket_prom = desembolsado_df['MAF NETO_Num'].mean() if q_desembolso > 0 else 0
-
-st.markdown(f"""
-<div class="kpi-row">
-    <div class="kpi-card" role="status" aria-label="Desembolso total: S/ {monto_desembolso:,.0f}">
-        <div class="kpi-label">Desembolso Total</div>
-        <div class="kpi-value">S/ {monto_desembolso:,.0f}</div>
-        <div class="kpi-sub">{q_desembolso} operaciones desembolsadas</div>
-    </div>
-    <div class="kpi-card" data-accent="true" role="status" aria-label="Avance vs meta: {avance:.1f} porciento">
-        <div class="kpi-label">Avance vs Meta</div>
-        <div class="kpi-value">{avance:.1f}%</div>
-        <div class="kpi-sub">Meta: S/ {meta_actual:,.0f}</div>
-    </div>
-    <div class="kpi-card" role="status" aria-label="Operaciones totales: {cantidad_ops}">
-        <div class="kpi-label">Operaciones Totales</div>
-        <div class="kpi-value">{cantidad_ops}</div>
-        <div class="kpi-sub">Todos los estados</div>
-    </div>
-    <div class="kpi-card" role="status" aria-label="Ticket promedio: S/ {ticket_prom:,.0f}">
-        <div class="kpi-label">Ticket Promedio</div>
-        <div class="kpi-value">S/ {ticket_prom:,.0f}</div>
-        <div class="kpi-sub">Promedio por desembolso</div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
-# --- HELPER ---
-def clean_fig(fig, h=300):
-    fig.update_layout(
-        plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
-        font=dict(family="Manrope", color="#1C1C1E", size=11),
-        margin=dict(l=60, r=60, t=5, b=5), height=h, # Márgenes reducidos para evitar scroll
-        dragmode=False,
+    # --- CALCULO META DINÁMICA ---
+    # Base: suma directa desde MESES_CONFIG para los meses activos (incluye sups sin datos aún)
+    meta_base = sum(
+        sum(v for k, v in MESES_CONFIG.get(m, {}).get('metas', {}).items() if k != 'WINNIE')
+        for m in selected_mes
     )
-    fig.update_xaxes(showgrid=False, zeroline=False, tickfont=dict(size=9), automargin=True)
-    fig.update_yaxes(showgrid=True, gridcolor='#F0F0F5', zeroline=False, tickfont=dict(size=9), automargin=True)
-    return fig
+    meta_actual = meta_base
 
-# --- SECCIÓN: GRÁFICOS ---
-c_head1, c_head2 = st.columns([3, 1])
-with c_head1:
-    st.markdown("""<div class="section-header" style="margin-top:10px;">
-        <div class="section-icon"><svg viewBox="0 0 24 24"><path d="M3 13h2v8H3zm4-4h2v12H7zm4-2h2v14h-2zm4 6h2v8h-2zm4-8h2v16h-2z"/></svg></div>
-        <span class="section-label">Análisis de Rendimiento</span>
+
+    monto_desembolso = desembolsado_df['MAF NETO_Num'].sum()
+    q_desembolso = len(desembolsado_df)
+    avance = (monto_desembolso / meta_actual * 100) if meta_actual > 0 else 0
+    cantidad_ops = len(filtered_df)
+    ticket_prom = desembolsado_df['MAF NETO_Num'].mean() if q_desembolso > 0 else 0
+
+    st.markdown(f"""
+    <div class="kpi-row">
+        <div class="kpi-card" role="status" aria-label="Desembolso total: S/ {monto_desembolso:,.0f}">
+            <div class="kpi-label">Desembolso Total</div>
+            <div class="kpi-value">S/ {monto_desembolso:,.0f}</div>
+            <div class="kpi-sub">{q_desembolso} operaciones desembolsadas</div>
+        </div>
+        <div class="kpi-card" data-accent="true" role="status" aria-label="Avance vs meta: {avance:.1f} porciento">
+            <div class="kpi-label">Avance vs Meta</div>
+            <div class="kpi-value">{avance:.1f}%</div>
+            <div class="kpi-sub">Meta: S/ {meta_actual:,.0f}</div>
+        </div>
+        <div class="kpi-card" role="status" aria-label="Operaciones totales: {cantidad_ops}">
+            <div class="kpi-label">Operaciones Totales</div>
+            <div class="kpi-value">{cantidad_ops}</div>
+            <div class="kpi-sub">Todos los estados</div>
+        </div>
+        <div class="kpi-card" role="status" aria-label="Ticket promedio: S/ {ticket_prom:,.0f}">
+            <div class="kpi-label">Ticket Promedio</div>
+            <div class="kpi-value">S/ {ticket_prom:,.0f}</div>
+            <div class="kpi-sub">Promedio por desembolso</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # --- HELPER ---
+    def clean_fig(fig, h=300):
+        fig.update_layout(
+            plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(family="Manrope", color="#1C1C1E", size=11),
+            margin=dict(l=60, r=60, t=5, b=5), height=h, # Márgenes reducidos para evitar scroll
+            dragmode=False,
+        )
+        fig.update_xaxes(showgrid=False, zeroline=False, tickfont=dict(size=9), automargin=True)
+        fig.update_yaxes(showgrid=True, gridcolor='#F0F0F5', zeroline=False, tickfont=dict(size=9), automargin=True)
+        return fig
+
+    # --- SECCIÓN: GRÁFICOS ---
+    c_head1, c_head2 = st.columns([3, 1])
+    with c_head1:
+        st.markdown("""<div class="section-header" style="margin-top:10px;">
+            <div class="section-icon"><svg viewBox="0 0 24 24"><path d="M3 13h2v8H3zm4-4h2v12H7zm4-2h2v14h-2zm4 6h2v8h-2zm4-8h2v16h-2z"/></svg></div>
+            <span class="section-label">Análisis de Rendimiento</span>
+        </div>""", unsafe_allow_html=True)
+
+    with c_head2:
+        st.markdown('<div style="margin-top:18px;">', unsafe_allow_html=True)
+        with st.popover("🔍 Filtrar por Zona", width="stretch"):
+            st.markdown("**Seleccionar Zonas**")
+            # Obtenemos zonas del df ya filtrado por los controles superiores para mantener coherencia
+            zonas_disponibles = sorted([z for z in filtered_df['ZONA_SUP'].unique() if z != 'N/A'])
+            selected_zonas_sec = []
+            for zona in zonas_disponibles:
+                if st.checkbox(zona, value=True, key=f"sec_{zona}"):
+                    selected_zonas_sec.append(zona)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # DF específico para esta sección
+    if not selected_zonas_sec:
+        section_df = filtered_df.iloc[:0] # Vacío si no hay nada seleccionado
+    else:
+        section_df = filtered_df[filtered_df['ZONA_SUP'].isin(selected_zonas_sec)]
+
+    desembolsado_sec = section_df[section_df['ESTADO LIMPIO'] == 'DESEMBOLSADO']
+
+    title_style = 'style="font-size:15px; font-weight:700; color:#1A4FA0; margin-bottom:12px; margin-top:0px;"'
+
+    # ROW 1
+    c1, c2 = st.columns([3, 2])
+
+    with c1:
+        st.markdown(f'<p {title_style}>Desembolso por Supervisor</p>', unsafe_allow_html=True)
+        v_sup = desembolsado_sec.groupby('SUPERVISOR')['MAF NETO_Num'].sum().reset_index().sort_values('MAF NETO_Num', ascending=True)
+        fig1 = go.Figure(go.Bar(
+            y=v_sup['SUPERVISOR'], x=v_sup['MAF NETO_Num'], orientation='h',
+            marker=dict(color='#E67212', cornerradius=4),
+            text=[f"S/ {v:,.0f}" for v in v_sup['MAF NETO_Num']], textposition='outside',
+            textfont=dict(size=11, family="Manrope", color="#1C1C1E"),
+            cliponaxis=False # Evita que se corte el texto
+        ))
+        fig1 = clean_fig(fig1, 300)
+        # Ampliar el rango del eje X un 40% para dar espacio total a la etiqueta
+        mx = v_sup['MAF NETO_Num'].max()
+        fig1.update_xaxes(range=[0, mx * 1.40] if mx > 0 else None)
+        fig1.update_layout(xaxis_title="", yaxis_title="")
+        st.plotly_chart(fig1, width='stretch', config={'displayModeBar': False})
+
+    with c2:
+        st.markdown(f'<p {title_style}>Funnel por Estado</p>', unsafe_allow_html=True)
+        e_dist = section_df.groupby('ESTADO LIMPIO').agg(
+            Cantidad=('ESTADO LIMPIO', 'count'),
+            Monto=('MAF NETO_Num', 'sum')
+        ).reset_index().rename(columns={'ESTADO LIMPIO': 'Estado'})
+        e_dist = e_dist.sort_values('Cantidad', ascending=True) # Mayor a menor (Plotly dibuja de abajo a arriba)
+
+        fig2 = go.Figure()
+        for _, row in e_dist.iterrows():
+            # Formatear el monto de forma compacta
+            monto_f = f"S/ {row['Monto']:,.0f}" if row['Monto'] < 1000000 else f"S/ {row['Monto']/1e6:.1f}M"
+            fig2.add_trace(go.Bar(
+                y=[row['Estado']], x=[row['Cantidad']], orientation='h',
+                marker=dict(color=ESTADO_COLORS.get(row['Estado'], '#7A7A82'), cornerradius=4),
+                text=[f"{int(row['Cantidad'])} ({monto_f})"], textposition='outside',
+                hovertemplate=f"<b>{row['Estado']}</b><br>Cantidad: {int(row['Cantidad'])}<br>Monto: {monto_f}<extra></extra>",
+                textfont=dict(size=11, family="Manrope"), showlegend=False,
+                cliponaxis=False
+            ))
+        fig2 = clean_fig(fig2, 300)
+        # Espacio extra en el eje X para el Funnel (40% buffer)
+        mxf = e_dist['Cantidad'].max()
+        fig2.update_xaxes(range=[0, mxf * 1.40] if mxf > 0 else None)
+        fig2.update_layout(barmode='stack', xaxis_title="", yaxis_title="")
+        st.plotly_chart(fig2, width='stretch', config={'displayModeBar': False})
+
+    # ROW 2
+    c3, c4, c5 = st.columns(3)
+
+    with c3:
+        st.markdown(f'<p {title_style}>Desembolso por Convenio</p>', unsafe_allow_html=True)
+        v_conv = desembolsado_sec.groupby('CONVENIO')['MAF NETO_Num'].sum().reset_index().sort_values('MAF NETO_Num', ascending=False)
+        fig3 = go.Figure(go.Bar(
+            x=v_conv['CONVENIO'], y=v_conv['MAF NETO_Num'],
+            marker=dict(color='#1A4FA0', cornerradius=4), # Usamos Azul BCP para variar del naranja
+            text=[f"{v/1000:.0f}K" for v in v_conv['MAF NETO_Num']], textposition='outside',
+            textfont=dict(size=10, family="Manrope", color="#1C1C1E")
+        ))
+        fig3 = clean_fig(fig3, 260)
+        fig3.update_layout(xaxis_title="", yaxis_title="")
+        st.plotly_chart(fig3, width='stretch', config={'displayModeBar': False})
+
+    with c4:
+        st.markdown(f'<p {title_style}>Distribución por Región</p>', unsafe_allow_html=True)
+        v_reg = desembolsado_df.groupby('REGION')['MAF NETO_Num'].sum().reset_index().sort_values('MAF NETO_Num', ascending=False)
+        fig4 = go.Figure(go.Pie(
+            labels=v_reg['REGION'], values=v_reg['MAF NETO_Num'], hole=0.7,
+            textposition='outside', textinfo='label+percent',
+            textfont=dict(size=11, family="Manrope", color="#1C1C1E"),
+            marker=dict(colors=[REGION_COLORS.get(r, '#7A7A82') for r in v_reg['REGION']],
+                        line=dict(color='#FFFFFF', width=2))
+        ))
+        fig4 = clean_fig(fig4, 260) # Altura normalizada para alinear la base de la tarjeta
+        fig4.update_layout(
+            showlegend=False,
+            margin=dict(l=100, r=100, t=30, b=30), # Margen grande para que el círculo se vea pequeño y centrado
+            annotations=[dict(
+                text=f'<span style="font-size:12px; font-weight:bold; color:#1A4FA0">S/ {monto_desembolso/1e6:.1f}M</span><br><span style="font-size:8px; color:#7A7A82">Total</span>',
+                x=0.5, y=0.5, showarrow=False, xanchor='center', yanchor='middle',
+                font=dict(family="Manrope")
+            )]
+        )
+        st.plotly_chart(fig4, width='stretch', config={'displayModeBar': False})
+
+    with c5:
+        st.markdown(f'<p {title_style}>Top Ejecutivos por Desembolso</p>', unsafe_allow_html=True)
+        if 'EJECUTIVO' in desembolsado_sec.columns:
+            top_asesores = desembolsado_sec.groupby('EJECUTIVO')['MAF NETO_Num'].sum().nlargest(5).reset_index()
+            top_asesores = top_asesores.sort_values('MAF NETO_Num', ascending=True)
+            top_asesores['Nombre'] = top_asesores['EJECUTIVO'].apply(lambda n: str(n)[:20] + '...' if len(str(n)) > 20 else str(n))
+            fig5 = go.Figure(go.Bar(
+                y=top_asesores['Nombre'], x=top_asesores['MAF NETO_Num'], orientation='h',
+                marker=dict(color='#E67212', cornerradius=4),
+                text=[f"S/ {v:,.0f}" for v in top_asesores['MAF NETO_Num']], textposition='outside',
+                textfont=dict(size=10, family="Manrope", color="#1C1C1E"),
+                cliponaxis=False
+            ))
+            fig5 = clean_fig(fig5, 260)
+            # Espacio extra en el eje X para Top Asesores (40% buffer)
+            mx5 = top_asesores['MAF NETO_Num'].max()
+            fig5.update_xaxes(range=[0, mx5 * 1.40] if mx5 > 0 else None)
+            fig5.update_layout(xaxis_title="", yaxis_title="")
+            st.plotly_chart(fig5, width='stretch', config={'displayModeBar': False})
+        else:
+            st.info("Columna de nombres no disponible.")
+
+    # --- SECCIÓN: TABLAS ---
+    st.markdown("""<div class="section-header">
+        <div class="section-icon"><svg viewBox="0 0 24 24"><path d="M3 3h18v18H3zm2 2v4h6V5zm8 0v4h6V5zm-8 6v4h6v-4zm8 0v4h6v-4zM5 17v2h6v-2zm8 0v2h6v-2z"/></svg></div>
+        <span class="section-label">Tablas de Gestión</span>
     </div>""", unsafe_allow_html=True)
 
-with c_head2:
-    st.markdown('<div style="margin-top:18px;">', unsafe_allow_html=True)
-    with st.popover("🔍 Filtrar por Zona", width="stretch"):
-        st.markdown("**Seleccionar Zonas**")
-        # Obtenemos zonas del df ya filtrado por los controles superiores para mantener coherencia
-        zonas_disponibles = sorted([z for z in filtered_df['ZONA_SUP'].unique() if z != 'N/A'])
-        selected_zonas_sec = []
-        for zona in zonas_disponibles:
-            if st.checkbox(zona, value=True, key=f"sec_{zona}"):
-                selected_zonas_sec.append(zona)
-    st.markdown('</div>', unsafe_allow_html=True)
+    def build_matrix(data, group_col, meses_activos):
+        g = lambda p, c: p[c] if c in p.columns else 0
 
-# DF específico para esta sección
-if not selected_zonas_sec:
-    section_df = filtered_df.iloc[:0] # Vacío si no hay nada seleccionado
-else:
-    section_df = filtered_df[filtered_df['ZONA_SUP'].isin(selected_zonas_sec)]
+        if group_col == 'SUPERVISOR':
+            # Supervisores con meta asignada en los meses activos
+            sups_con_meta = sorted(
+                s for mes in meses_activos
+                for s in MESES_CONFIG.get(mes, {}).get('metas', {})
+                if s != 'WINNIE'
+            )
+            # Supervisores que tienen datos reales (normalizados a mayúsculas)
+            data = data.copy()
+            if not data.empty:
+                data[group_col] = data[group_col].str.upper().str.strip()
+            sups_en_datos = list(data[group_col].unique()) if not data.empty else []
+            full_index = sorted(set(sups_con_meta) | set(sups_en_datos))
 
-desembolsado_sec = section_df[section_df['ESTADO LIMPIO'] == 'DESEMBOLSADO']
-
-title_style = 'style="font-size:15px; font-weight:700; color:#1A4FA0; margin-bottom:12px; margin-top:0px;"'
-
-# ROW 1
-c1, c2 = st.columns([3, 2])
-
-with c1:
-    st.markdown(f'<p {title_style}>Desembolso por Supervisor</p>', unsafe_allow_html=True)
-    v_sup = desembolsado_sec.groupby('SUPERVISOR')['MAF NETO_Num'].sum().reset_index().sort_values('MAF NETO_Num', ascending=True)
-    fig1 = go.Figure(go.Bar(
-        y=v_sup['SUPERVISOR'], x=v_sup['MAF NETO_Num'], orientation='h',
-        marker=dict(color='#E67212', cornerradius=4),
-        text=[f"S/ {v:,.0f}" for v in v_sup['MAF NETO_Num']], textposition='outside',
-        textfont=dict(size=11, family="Manrope", color="#1C1C1E"),
-        cliponaxis=False # Evita que se corte el texto
-    ))
-    fig1 = clean_fig(fig1, 300)
-    # Ampliar el rango del eje X un 40% para dar espacio total a la etiqueta
-    mx = v_sup['MAF NETO_Num'].max()
-    fig1.update_xaxes(range=[0, mx * 1.40] if mx > 0 else None)
-    fig1.update_layout(xaxis_title="", yaxis_title="")
-    st.plotly_chart(fig1, width='stretch', config={'displayModeBar': False})
-
-with c2:
-    st.markdown(f'<p {title_style}>Funnel por Estado</p>', unsafe_allow_html=True)
-    e_dist = section_df.groupby('ESTADO LIMPIO').agg(
-        Cantidad=('ESTADO LIMPIO', 'count'),
-        Monto=('MAF NETO_Num', 'sum')
-    ).reset_index().rename(columns={'ESTADO LIMPIO': 'Estado'})
-    e_dist = e_dist.sort_values('Cantidad', ascending=True) # Mayor a menor (Plotly dibuja de abajo a arriba)
-    
-    fig2 = go.Figure()
-    for _, row in e_dist.iterrows():
-        # Formatear el monto de forma compacta
-        monto_f = f"S/ {row['Monto']:,.0f}" if row['Monto'] < 1000000 else f"S/ {row['Monto']/1e6:.1f}M"
-        fig2.add_trace(go.Bar(
-            y=[row['Estado']], x=[row['Cantidad']], orientation='h',
-            marker=dict(color=ESTADO_COLORS.get(row['Estado'], '#7A7A82'), cornerradius=4),
-            text=[f"{int(row['Cantidad'])} ({monto_f})"], textposition='outside',
-            hovertemplate=f"<b>{row['Estado']}</b><br>Cantidad: {int(row['Cantidad'])}<br>Monto: {monto_f}<extra></extra>",
-            textfont=dict(size=11, family="Manrope"), showlegend=False,
-            cliponaxis=False
-        ))
-    fig2 = clean_fig(fig2, 300)
-    # Espacio extra en el eje X para el Funnel (40% buffer)
-    mxf = e_dist['Cantidad'].max()
-    fig2.update_xaxes(range=[0, mxf * 1.40] if mxf > 0 else None)
-    fig2.update_layout(barmode='stack', xaxis_title="", yaxis_title="")
-    st.plotly_chart(fig2, width='stretch', config={'displayModeBar': False})
-
-# ROW 2
-c3, c4, c5 = st.columns(3)
-
-with c3:
-    st.markdown(f'<p {title_style}>Desembolso por Convenio</p>', unsafe_allow_html=True)
-    v_conv = desembolsado_sec.groupby('CONVENIO')['MAF NETO_Num'].sum().reset_index().sort_values('MAF NETO_Num', ascending=False)
-    fig3 = go.Figure(go.Bar(
-        x=v_conv['CONVENIO'], y=v_conv['MAF NETO_Num'],
-        marker=dict(color='#1A4FA0', cornerradius=4), # Usamos Azul BCP para variar del naranja
-        text=[f"{v/1000:.0f}K" for v in v_conv['MAF NETO_Num']], textposition='outside',
-        textfont=dict(size=10, family="Manrope", color="#1C1C1E")
-    ))
-    fig3 = clean_fig(fig3, 260)
-    fig3.update_layout(xaxis_title="", yaxis_title="")
-    st.plotly_chart(fig3, width='stretch', config={'displayModeBar': False})
-
-with c4:
-    st.markdown(f'<p {title_style}>Distribución por Región</p>', unsafe_allow_html=True)
-    v_reg = desembolsado_df.groupby('REGION')['MAF NETO_Num'].sum().reset_index().sort_values('MAF NETO_Num', ascending=False)
-    fig4 = go.Figure(go.Pie(
-        labels=v_reg['REGION'], values=v_reg['MAF NETO_Num'], hole=0.7,
-        textposition='outside', textinfo='label+percent',
-        textfont=dict(size=11, family="Manrope", color="#1C1C1E"),
-        marker=dict(colors=[REGION_COLORS.get(r, '#7A7A82') for r in v_reg['REGION']],
-                    line=dict(color='#FFFFFF', width=2))
-    ))
-    fig4 = clean_fig(fig4, 260) # Altura normalizada para alinear la base de la tarjeta
-    fig4.update_layout(
-        showlegend=False,
-        margin=dict(l=100, r=100, t=30, b=30), # Margen grande para que el círculo se vea pequeño y centrado
-        annotations=[dict(
-            text=f'<span style="font-size:12px; font-weight:bold; color:#1A4FA0">S/ {monto_desembolso/1e6:.1f}M</span><br><span style="font-size:8px; color:#7A7A82">Total</span>', 
-            x=0.5, y=0.5, showarrow=False, xanchor='center', yanchor='middle',
-            font=dict(family="Manrope")
-        )]
-    )
-    st.plotly_chart(fig4, width='stretch', config={'displayModeBar': False})
-
-with c5:
-    st.markdown(f'<p {title_style}>Top Ejecutivos por Desembolso</p>', unsafe_allow_html=True)
-    if 'EJECUTIVO' in desembolsado_sec.columns:
-        top_asesores = desembolsado_sec.groupby('EJECUTIVO')['MAF NETO_Num'].sum().nlargest(5).reset_index()
-        top_asesores = top_asesores.sort_values('MAF NETO_Num', ascending=True)
-        top_asesores['Nombre'] = top_asesores['EJECUTIVO'].apply(lambda n: str(n)[:20] + '...' if len(str(n)) > 20 else str(n))
-        fig5 = go.Figure(go.Bar(
-            y=top_asesores['Nombre'], x=top_asesores['MAF NETO_Num'], orientation='h',
-            marker=dict(color='#E67212', cornerradius=4),
-            text=[f"S/ {v:,.0f}" for v in top_asesores['MAF NETO_Num']], textposition='outside',
-            textfont=dict(size=10, family="Manrope", color="#1C1C1E"),
-            cliponaxis=False
-        ))
-        fig5 = clean_fig(fig5, 260)
-        # Espacio extra en el eje X para Top Asesores (40% buffer)
-        mx5 = top_asesores['MAF NETO_Num'].max()
-        fig5.update_xaxes(range=[0, mx5 * 1.40] if mx5 > 0 else None)
-        fig5.update_layout(xaxis_title="", yaxis_title="")
-        st.plotly_chart(fig5, width='stretch', config={'displayModeBar': False})
-    else:
-        st.info("Columna de nombres no disponible.")
-
-# --- SECCIÓN: TABLAS ---
-st.markdown("""<div class="section-header">
-    <div class="section-icon"><svg viewBox="0 0 24 24"><path d="M3 3h18v18H3zm2 2v4h6V5zm8 0v4h6V5zm-8 6v4h6v-4zm8 0v4h6v-4zM5 17v2h6v-2zm8 0v2h6v-2z"/></svg></div>
-    <span class="section-label">Tablas de Gestión</span>
-</div>""", unsafe_allow_html=True)
-
-def build_matrix(data, group_col, meses_activos):
-    g = lambda p, c: p[c] if c in p.columns else 0
-
-    if group_col == 'SUPERVISOR':
-        # Supervisores con meta asignada en los meses activos
-        sups_con_meta = sorted(
-            s for mes in meses_activos
-            for s in MESES_CONFIG.get(mes, {}).get('metas', {})
-            if s != 'WINNIE'
-        )
-        # Supervisores que tienen datos reales (normalizados a mayúsculas)
-        data = data.copy()
-        if not data.empty:
-            data[group_col] = data[group_col].str.upper().str.strip()
-        sups_en_datos = list(data[group_col].unique()) if not data.empty else []
-        full_index = sorted(set(sups_con_meta) | set(sups_en_datos))
-
-        if not data.empty:
+            if not data.empty:
+                ps = data.pivot_table(index=group_col, columns='ESTADO LIMPIO', values='MAF NETO_Num', aggfunc='sum', fill_value=0)
+                pc = data.pivot_table(index=group_col, columns='ESTADO LIMPIO', values='MAF NETO_Num', aggfunc='count', fill_value=0)
+            else:
+                ps = pd.DataFrame(index=pd.Index([], name=group_col))
+                pc = pd.DataFrame(index=pd.Index([], name=group_col))
+            ps = ps.reindex(full_index, fill_value=0)
+            pc = pc.reindex(full_index, fill_value=0)
+            res = pd.DataFrame(index=ps.index)
+            res['ZONA'] = [get_zona_gestion_periodo(s, meses_activos) for s in res.index]
+        else:
+            if data.empty: return pd.DataFrame()
             ps = data.pivot_table(index=group_col, columns='ESTADO LIMPIO', values='MAF NETO_Num', aggfunc='sum', fill_value=0)
             pc = data.pivot_table(index=group_col, columns='ESTADO LIMPIO', values='MAF NETO_Num', aggfunc='count', fill_value=0)
+            plazas_en_datos = set(data[group_col].dropna().unique())
+            plazas_con_meta = {
+                get_plaza_reporte(supervisor, mes)
+                for mes in meses_activos
+                for supervisor in MESES_CONFIG.get(mes, {}).get('metas', {})
+                if supervisor != 'WINNIE'
+            }
+            plazas_presentes = plazas_en_datos | plazas_con_meta
+            full_index = [p for p in PLAZAS_REPORTE_ORDEN if p in plazas_presentes]
+            full_index += sorted(plazas_presentes - set(full_index))
+            ps = ps.reindex(full_index, fill_value=0)
+            pc = pc.reindex(full_index, fill_value=0)
+            res = pd.DataFrame(index=ps.index)
+
+        res['TOTAL DESEMBOLSO'] = g(ps, 'DESEMBOLSADO')
+        res['Q DESEMBOLSO'] = g(pc, 'DESEMBOLSADO')
+        res['APROBADA'] = g(ps, 'APROBADA')
+        res['POR INGRESAR'] = g(ps, 'POR INGRESAR')
+        res['EVALUACION BCP'] = g(ps, 'EN EVALUACION BCP')
+        res['PENDIENTE DE BACK'] = g(ps, 'PENDIENTE DE BACK OFFICE')
+        res['PENDIENTE DE REMESA'] = g(ps, 'PENDIENTE DE REMESA')
+        # --- Metas Dinámicas por mes seleccionado ---
+        if group_col == 'SUPERVISOR':
+            res['META OBJETIVO'] = [get_meta_supervisor(s, meses_activos) for s in res.index]
         else:
-            ps = pd.DataFrame(index=pd.Index([], name=group_col))
-            pc = pd.DataFrame(index=pd.Index([], name=group_col))
-        ps = ps.reindex(full_index, fill_value=0)
-        pc = pc.reindex(full_index, fill_value=0)
-        res = pd.DataFrame(index=ps.index)
-        res['ZONA'] = [get_zona_gestion_periodo(s, meses_activos) for s in res.index]
-    else:
+            plazas_metas = {plaza: 0 for plaza in res.index}
+            for mes in meses_activos:
+                for sup, meta in MESES_CONFIG.get(mes, {}).get('metas', {}).items():
+                    if sup == 'WINNIE':
+                        continue
+                    plaza = get_plaza_reporte(sup, mes)
+                    plazas_metas[plaza] = plazas_metas.get(plaza, 0) + meta
+            res['META OBJETIVO'] = [plazas_metas.get(p, 0) for p in res.index]
+        res['AVANCE'] = (res['TOTAL DESEMBOLSO'] / res['META OBJETIVO'] * 100).fillna(0)
+        res['Q POR INGRESAR'] = g(pc, 'POR INGRESAR')
+        res['Q EVALUACION BCP'] = g(pc, 'EN EVALUACION BCP')
+        res['Q PENDIENTE DE BACK'] = g(pc, 'PENDIENTE DE BACK OFFICE')
+        tot = res.sum(numeric_only=True)
+        if group_col == 'SUPERVISOR': tot['ZONA'] = ''
+        tot['AVANCE'] = (tot['TOTAL DESEMBOLSO'] / tot['META OBJETIVO'] * 100) if tot['META OBJETIVO'] > 0 else 0
+        res.loc['TOTAL'] = tot
+        return res.reset_index()
+
+    # Usamos filtered_df que ya tiene el filtro de mes aplicado desde arriba
+    m_df = filtered_df
+    df_super = build_matrix(m_df, 'SUPERVISOR', selected_mes)
+
+    def build_plaza_matrix(data, meses_activos):
         if data.empty: return pd.DataFrame()
-        ps = data.pivot_table(index=group_col, columns='ESTADO LIMPIO', values='MAF NETO_Num', aggfunc='sum', fill_value=0)
-        pc = data.pivot_table(index=group_col, columns='ESTADO LIMPIO', values='MAF NETO_Num', aggfunc='count', fill_value=0)
-        plazas_en_datos = set(data[group_col].dropna().unique())
-        plazas_con_meta = {
-            get_plaza_reporte(supervisor, mes)
-            for mes in meses_activos
-            for supervisor in MESES_CONFIG.get(mes, {}).get('metas', {})
-            if supervisor != 'WINNIE'
-        }
-        plazas_presentes = plazas_en_datos | plazas_con_meta
-        full_index = [p for p in PLAZAS_REPORTE_ORDEN if p in plazas_presentes]
-        full_index += sorted(plazas_presentes - set(full_index))
-        ps = ps.reindex(full_index, fill_value=0)
-        pc = pc.reindex(full_index, fill_value=0)
-        res = pd.DataFrame(index=ps.index)
+        data = data.copy()
+        data['PLAZA'] = data.apply(
+            lambda row: get_plaza_reporte(row['SUPERVISOR'], row['MES']),
+            axis=1,
+        )
+        return build_matrix(data, 'PLAZA', meses_activos)
 
-    res['TOTAL DESEMBOLSO'] = g(ps, 'DESEMBOLSADO')
-    res['Q DESEMBOLSO'] = g(pc, 'DESEMBOLSADO')
-    res['APROBADA'] = g(ps, 'APROBADA')
-    res['POR INGRESAR'] = g(ps, 'POR INGRESAR')
-    res['EVALUACION BCP'] = g(ps, 'EN EVALUACION BCP')
-    res['PENDIENTE DE BACK'] = g(ps, 'PENDIENTE DE BACK OFFICE')
-    res['PENDIENTE DE REMESA'] = g(ps, 'PENDIENTE DE REMESA')
-    # --- Metas Dinámicas por mes seleccionado ---
-    if group_col == 'SUPERVISOR':
-        res['META OBJETIVO'] = [get_meta_supervisor(s, meses_activos) for s in res.index]
-    else:
-        plazas_metas = {plaza: 0 for plaza in res.index}
-        for mes in meses_activos:
-            for sup, meta in MESES_CONFIG.get(mes, {}).get('metas', {}).items():
-                if sup == 'WINNIE':
-                    continue
-                plaza = get_plaza_reporte(sup, mes)
-                plazas_metas[plaza] = plazas_metas.get(plaza, 0) + meta
-        res['META OBJETIVO'] = [plazas_metas.get(p, 0) for p in res.index]
-    res['AVANCE'] = (res['TOTAL DESEMBOLSO'] / res['META OBJETIVO'] * 100).fillna(0)
-    res['Q POR INGRESAR'] = g(pc, 'POR INGRESAR')
-    res['Q EVALUACION BCP'] = g(pc, 'EN EVALUACION BCP')
-    res['Q PENDIENTE DE BACK'] = g(pc, 'PENDIENTE DE BACK OFFICE')
-    tot = res.sum(numeric_only=True)
-    if group_col == 'SUPERVISOR': tot['ZONA'] = ''
-    tot['AVANCE'] = (tot['TOTAL DESEMBOLSO'] / tot['META OBJETIVO'] * 100) if tot['META OBJETIVO'] > 0 else 0
-    res.loc['TOTAL'] = tot
-    return res.reset_index()
-
-# Usamos filtered_df que ya tiene el filtro de mes aplicado desde arriba
-m_df = filtered_df
-df_super = build_matrix(m_df, 'SUPERVISOR', selected_mes)
-
-def build_plaza_matrix(data, meses_activos):
-    if data.empty: return pd.DataFrame()
-    data = data.copy()
-    data['PLAZA'] = data.apply(
-        lambda row: get_plaza_reporte(row['SUPERVISOR'], row['MES']),
-        axis=1,
-    )
-    return build_matrix(data, 'PLAZA', meses_activos)
-
-df_plaza = build_plaza_matrix(m_df, selected_mes)
+    df_plaza = build_plaza_matrix(m_df, selected_mes)
 
 
-cc = {
-    "TOTAL DESEMBOLSO": st.column_config.NumberColumn("Total Desembolso", format="S/ %,.0f"),
-    "APROBADA": st.column_config.NumberColumn("Aprobada", format="S/ %,.0f"),
-    "POR INGRESAR": st.column_config.NumberColumn("Por Ingresar", format="S/ %,.0f"),
-    "EVALUACION BCP": st.column_config.NumberColumn("Eval. BCP", format="S/ %,.0f"),
-    "PENDIENTE DE BACK": st.column_config.NumberColumn("Pend. Back", format="S/ %,.0f"),
-    "PENDIENTE DE REMESA": st.column_config.NumberColumn("Pend. Remesa", format="S/ %,.0f"),
-    "META OBJETIVO": st.column_config.NumberColumn("Meta", format="S/ %,.0f"),
-    "AVANCE": st.column_config.ProgressColumn("Avance", format="%.1f%%", min_value=0, max_value=100),
-    "Q DESEMBOLSO": st.column_config.NumberColumn("Q Desemb.", format="%,.0f"),
-    "Q POR INGRESAR": st.column_config.NumberColumn("Q Ingr.", format="%,.0f"),
-    "Q EVALUACION BCP": st.column_config.NumberColumn("Q Eval.", format="%,.0f"),
-    "Q PENDIENTE DE BACK": st.column_config.NumberColumn("Q Back", format="%,.0f"),
-}
+    cc = {
+        "TOTAL DESEMBOLSO": st.column_config.NumberColumn("Total Desembolso", format="S/ %,.0f"),
+        "APROBADA": st.column_config.NumberColumn("Aprobada", format="S/ %,.0f"),
+        "POR INGRESAR": st.column_config.NumberColumn("Por Ingresar", format="S/ %,.0f"),
+        "EVALUACION BCP": st.column_config.NumberColumn("Eval. BCP", format="S/ %,.0f"),
+        "PENDIENTE DE BACK": st.column_config.NumberColumn("Pend. Back", format="S/ %,.0f"),
+        "PENDIENTE DE REMESA": st.column_config.NumberColumn("Pend. Remesa", format="S/ %,.0f"),
+        "META OBJETIVO": st.column_config.NumberColumn("Meta", format="S/ %,.0f"),
+        "AVANCE": st.column_config.ProgressColumn("Avance", format="%.1f%%", min_value=0, max_value=100),
+        "Q DESEMBOLSO": st.column_config.NumberColumn("Q Desemb.", format="%,.0f"),
+        "Q POR INGRESAR": st.column_config.NumberColumn("Q Ingr.", format="%,.0f"),
+        "Q EVALUACION BCP": st.column_config.NumberColumn("Q Eval.", format="%,.0f"),
+        "Q PENDIENTE DE BACK": st.column_config.NumberColumn("Q Back", format="%,.0f"),
+    }
 
-tab1, tab2 = st.tabs(["Por Supervisor", "Por Plaza"])
+    tab1, tab2 = st.tabs(["Por Supervisor", "Por Plaza"])
 
-def color_total_row(row):
-    is_total = any(str(val).upper() == 'TOTAL' for val in row.values)
-    return ['background-color: #FFEDD5; font-weight: 700;' if is_total else '' for _ in row]
+    def color_total_row(row):
+        is_total = any(str(val).upper() == 'TOTAL' for val in row.values)
+        return ['background-color: #FFEDD5; font-weight: 700;' if is_total else '' for _ in row]
 
-with tab1:
-    if not df_super.empty: 
-        st.dataframe(df_super.style.apply(color_total_row, axis=1), width='stretch', hide_index=True, column_config=cc)
-        st.markdown(create_download_link(df_super, "Gestion_Supervisor.xlsx", "Exportar Supervisor"), unsafe_allow_html=True)
-with tab2:
-    if not df_plaza.empty: 
-        st.dataframe(df_plaza.style.apply(color_total_row, axis=1), width='stretch', hide_index=True, column_config=cc)
-        st.markdown(create_download_link(df_plaza, "Gestion_Plaza.xlsx", "Exportar Plaza"), unsafe_allow_html=True)
+    with tab1:
+        if not df_super.empty:
+            st.dataframe(df_super.style.apply(color_total_row, axis=1), width='stretch', hide_index=True, column_config=cc)
+            st.markdown(create_download_link(df_super, "Gestion_Supervisor.xlsx", "Exportar Supervisor"), unsafe_allow_html=True)
+    with tab2:
+        if not df_plaza.empty:
+            st.dataframe(df_plaza.style.apply(color_total_row, axis=1), width='stretch', hide_index=True, column_config=cc)
+            st.markdown(create_download_link(df_plaza, "Gestion_Plaza.xlsx", "Exportar Plaza"), unsafe_allow_html=True)
 
-# --- DETALLE ---
-st.markdown("""<div class="section-header">
-    <div class="section-icon"><svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg></div>
-    <span class="section-label">Detalle de Operaciones</span>
-</div>""", unsafe_allow_html=True)
+    # --- DETALLE ---
+    st.markdown("""<div class="section-header">
+        <div class="section-icon"><svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg></div>
+        <span class="section-label">Detalle de Operaciones</span>
+    </div>""", unsafe_allow_html=True)
 
-with st.expander("Detalle detallado por estado", expanded=True):
-    # Limpieza de columnas para el detalle
-    bad_cols = ['MAF NETO_Num', 'PLAZA DE VENTA', 'FECHA FILTRO', 'FECHA DE INGRESO', 'FECHA DE DESEMBOLSO']
-    show_df = filtered_df.copy()
-    show_df = show_df.loc[:, ~show_df.columns.str.contains('^Unnamed')]
-    show_df = show_df.drop(columns=[c for c in bad_cols if c in show_df.columns])
-    
-    # Crear lista de estados únicos (excluyendo vacíos)
-    estados_raw = sorted([e for e in show_df['ESTADO LIMPIO'].unique() if e != 'SIN ESTADO'])
-    
-    # "Todos" + Estados en formato Nombre Propio
-    tabs_nombres = ["Todos"] + [e.title() for e in estados_raw]
-    
-    # Crear las pestañas
-    tabs_detalle = st.tabs(tabs_nombres)
-    
-    for i, tab in enumerate(tabs_detalle):
-        with tab:
-            nombre_tab = tabs_nombres[i]
-            if nombre_tab == "Todos":
-                df_tab = show_df
-            else:
-                # Buscamos el estado original (en mayúsculas) para filtrar correctamente
-                estado_original = estados_raw[i-1] 
-                df_tab = show_df[show_df['ESTADO LIMPIO'] == estado_original]
-            
-            if not df_tab.empty:
-                st.dataframe(df_tab, width='stretch', hide_index=True)
-                st.markdown(create_download_link(df_tab, f"Detalle_{nombre_tab.replace(' ', '_')}.xlsx", f"Exportar {nombre_tab}"), unsafe_allow_html=True)
-            else:
-                st.info(f"No hay operaciones en estado: {nombre_tab}")
+    with st.expander("Detalle detallado por estado", expanded=True):
+        # Limpieza de columnas para el detalle
+        bad_cols = ['MAF NETO_Num', 'PLAZA DE VENTA', 'FECHA FILTRO', 'FECHA DE INGRESO', 'FECHA DE DESEMBOLSO']
+        show_df = filtered_df.copy()
+        show_df = show_df.loc[:, ~show_df.columns.str.contains('^Unnamed')]
+        show_df = show_df.drop(columns=[c for c in bad_cols if c in show_df.columns])
 
+        # Crear lista de estados únicos (excluyendo vacíos)
+        estados_raw = sorted([e for e in show_df['ESTADO LIMPIO'].unique() if e != 'SIN ESTADO'])
+
+        # "Todos" + Estados en formato Nombre Propio
+        tabs_nombres = ["Todos"] + [e.title() for e in estados_raw]
+
+        # Crear las pestañas
+        tabs_detalle = st.tabs(tabs_nombres)
+
+        for i, tab in enumerate(tabs_detalle):
+            with tab:
+                nombre_tab = tabs_nombres[i]
+                if nombre_tab == "Todos":
+                    df_tab = show_df
+                else:
+                    # Buscamos el estado original (en mayúsculas) para filtrar correctamente
+                    estado_original = estados_raw[i-1]
+                    df_tab = show_df[show_df['ESTADO LIMPIO'] == estado_original]
+
+                if not df_tab.empty:
+                    st.dataframe(df_tab, width='stretch', hide_index=True)
+                    st.markdown(create_download_link(df_tab, f"Detalle_{nombre_tab.replace(' ', '_')}.xlsx", f"Exportar {nombre_tab}"), unsafe_allow_html=True)
+                else:
+                    st.info(f"No hay operaciones en estado: {nombre_tab}")
+
+
+render_opi()
