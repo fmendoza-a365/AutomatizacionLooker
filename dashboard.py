@@ -558,7 +558,7 @@ ZONAS_MAP = {
     'ANA ALIAGA': 'LIMA',                                                       # AGOSTO - Nuevo
     'MERCEDES GIRALDO': 'LIMA',                                                 # AGOSTO - Nuevo
     'RENZO CACEDA': 'TRUJILLO',                                                 # SETIEMBRE - Nuevo
-    'MELISSA BRAVO': 'PIURA',                                                   # SETIEMBRE - Nueva supervisora
+    'MELISA BRAVO': 'LIMA',                                                    # SETIEMBRE
     'EMILIA PASCALO': 'LIMA',
     'JANETH VASQUEZ': 'LIMA',
 }
@@ -585,6 +585,7 @@ ZONAS_GESTION_POR_MES = {
         'ANGIE SILVERA': 'LIMA 1',
         'EMILIA PASCALO': 'LIMA 1',
         'JANETH VASQUEZ': 'LIMA 1',
+        'MELISA BRAVO': 'LIMA 1',
         'ANA ALIAGA': 'LIMA 1',
         'MERCEDES GIRALDO': 'LIMA 1',
         'KENNY MORALES': 'LIMA 1',
@@ -617,6 +618,7 @@ PLAZAS_REPORTE_POR_MES = {
         'ANGIE SILVERA': 'LIMA 1',
         'EMILIA PASCALO': 'LIMA 1',
         'JANETH VASQUEZ': 'LIMA 1',
+        'MELISA BRAVO': 'LIMA 1',
         'ANA ALIAGA': 'LIMA 1',
         'MERCEDES GIRALDO': 'LIMA 1',
         'KENNY MORALES': 'LIMA 1',
@@ -771,7 +773,7 @@ MESES_CONFIG = {
             'ELIZABETH ESQUIVEL': 1_000_000, 'MILUSKA LINARES': 1_000_000,
             'THALIA SALOME': 1_000_000, 'VIOLETA LLERENA': 1_000_000,
             'ARACELY VENTURA': 1_000_000, 'RENZO CACEDA': 1_000_000,
-            'ALEXANDRA GUZMAN': 1_000_000, 'MELISSA BRAVO': 1_000_000,  # Nueva supervisora Setiembre
+            'ALEXANDRA GUZMAN': 1_000_000, 'MELISA BRAVO': 1_000_000,
             'EMILIA PASCALO': 1_000_000, 'JANETH VASQUEZ': 1_000_000,
             'WINNIE': 2_000_000,  # alias de WINNIE ESCALANTE
         }
